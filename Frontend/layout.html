@@ -1,0 +1,76 @@
+<header class="topbar">
+  <div class="top-left">
+    <img src="office logo.png" alt="VAAU" class="top-logo" />
+    <div class="company-text">
+      <div class="company-name">VAAU TechnoSoft</div>
+      <div class="company-sub">Attendance Dashboard</div>
+    </div>
+  </div>
+
+  <div class="top-right">
+    <div class="datetime" id="topDate">--</div>
+
+    <div class="profile-dropdown">
+      <div class="profile-info">
+        <div id="userAvatar" class="user-avatar"></div>
+        <div style="display: flex; flex-direction: column;">
+          <span id="userName">User</span>
+          <span id="userRoleDisplay" style="font-size: 12px; color: #999;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="side-menu-wrapper">
+  <button id="menuToggle" class="menu-toggle" aria-expanded="false" aria-controls="sideMenu">
+    <span class="menu-bar"></span>
+    <span class="menu-bar"></span>
+    <span class="menu-bar"></span>
+  </button>
+  <nav id="sideMenu" class="side-menu" aria-hidden="true">
+    <div class="side-menu-inner">
+      <div class="side-menu-main-content">
+        <div class="side-menu-section">
+          <div class="side-menu-label">Main</div>
+          <a href="dashboard.html" class="side-menu-link">Dashboard</a>
+          <a href="attendance.html" class="side-menu-link employee-only">Attendance</a>
+          <a href="project.html" class="side-menu-link employee-only">Project</a>
+          <a href="leave.html" class="side-menu-link employee-only">Leave</a>
+          <a href="document.html" class="side-menu-link employee-only">Document</a>
+          <a href="newhire.html" class="side-menu-link hr-only">New Hire</a>
+        </div>
+        <div class="side-menu-section admin-only" style="display:none;">
+          <a href="admin.html" class="side-menu-link">Admin Dashboard</a>
+          <a href="users-management.html" class="side-menu-link">Users Management</a>
+          <a href="reports.html" class="side-menu-link">Reports</a>
+          <a href="newhire.html" class="side-menu-link">New Hire</a>
+        </div>
+      </div>
+      <div class="side-menu-footer">
+        <div class="side-menu-section">
+          <a href="#" id="settingsLink" class="side-menu-link">Settings</a>
+          <a href="#" id="logoutLink" class="side-menu-link">Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+</div>
+<div id="profileModal" class="modal">
+    <div class="modal-box">
+      <h3>Edit Profile</h3>
+      <label for="profName">Full Name</label>
+      <input id="profName" type="text" placeholder="Enter your full name" disabled />
+      
+      <label for="profCurrPass">Current Password</label>
+      <input id="profCurrPass" type="password" placeholder="Required to save changes" />
+      
+      <label for="profPass">New Password</label>
+      <input id="profPass" type="password" placeholder="Leave empty to keep current password" />
+      
+      <div class="modal-actions">
+        <button id="closeProfile" class="btn ghost">Cancel</button>
+        <button id="saveProfile" class="btn primary">Save Changes</button>
+      </div>
+    </div>
+  </div>

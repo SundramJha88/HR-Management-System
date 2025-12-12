@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - VAAU</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .login-container {
+      max-width: 420px;
+      margin: 80px auto;
+      padding: 24px;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    }
+    .login-container h2 {
+      margin: 0 0 16px 0;
+      color: #0da4d6;
+    }
+    .login-container p {
+      margin: 0 0 20px 0;
+      color: #6b6b6b;
+    }
+    .login-container label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #333;
+    }
+    .login-container input,
+    .login-container select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e6e6e6;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    .login-container input:focus,
+    .login-container select:focus {
+      outline: none;
+      border-color: #0da4d6;
+      box-shadow: 0 0 0 3px rgba(13, 164, 214, 0.1);
+    }
+    .login-container button {
+      width: 100%;
+    }
+    #loginErr {
+      color: #c0392b;
+      margin-top: 12px;
+    }
+    .login-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #e6e6e6;
+    }
+    .login-tab {
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b6b6b;
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+    }
+    .login-tab.active {
+      color: #0da4d6;
+      border-bottom-color: #0da4d6;
+    }
+    .login-form {
+      display: none;
+    }
+    .login-form.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>VAAU TechnoSoft</h2>
+    <p>Sign in to continue to dashboard</p>
+
+    <div class="login-tabs">
+      <button class="login-tab active" data-tab="employee">Employee</button>
+      <button class="login-tab" data-tab="admin">Admin</button>
+      <button class="login-tab" data-tab="hr">HR</button>
+    </div>
+
+    <div class="login-form active" id="employeeForm">
+      <label>Employee Email</label>
+      <input id="employeeEmail" placeholder="Enter employee email" type="email" />
+      <label>Password</label>
+      <input id="employeePass" type="password" placeholder="Enter password" />
+      <button id="loginBtn" class="btn primary">Employee Login</button>
+      <p id="employeeErr"></p>
+    </div>
+
+    <div class="login-form" id="adminForm">
+      <label>Admin Email</label>
+      <input id="adminEmail" placeholder="Enter admin email" type="email" />
+      <label>Password</label>
+      <input id="adminPass" type="password" placeholder="Enter password" />
+      <button id="adminLoginBtn" class="btn primary">Admin Login</button>
+      <p id="adminErr"></p>
+    </div>
+
+    <div class="login-form" id="hrForm">
+      <label>HR Email</label>
+      <input id="hrEmail" placeholder="Enter HR email" type="email" />
+      <label>Password</label>
+      <input id="hrPass" type="password" placeholder="Enter password" />
+      <button id="hrLoginBtn" class="btn primary">HR Login</button>
+      <p id="hrErr"></p>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.login-tab');
+    const forms = document.querySelectorAll('.login-form');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        forms.forEach(f => f.classList.remove('active'));
+        
+        tab.classList.add('active');
+        const formId = tab.dataset.tab + 'Form';
+        document.getElementById(formId).classList.add('active');
+      });
+    });
+
+    const handleLogin = async (role, email, password, errorEl) => {
+      if (!email || !password) {
+        errorEl.textContent = 'Email and password required';
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:5000/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (data && data.token) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userId", data.id);
+          localStorage.setItem("userName", data.name);
+          localStorage.setItem("userRole", data.role);
+          localStorage.setItem("userDepartment", data.department || "");
+          localStorage.setItem("loggedInEmp", JSON.stringify({
+            name: data.name,
+            role: data.role,
+            department: data.department
+          }));
+
+          const r = (data.role || '').toLowerCase();
+          if (r === 'admin') {
+            window.location.href = "admin.html";
+          } else {
+            window.location.href = "dashboard.html";
+          }
+        } else if (data && data.error) {
+          errorEl.textContent = data.error;
+        } else {
+          errorEl.textContent = 'Login failed';
+        }
+      } catch(e) {
+        console.error("Login error:", e);
+        errorEl.textContent = 'Connection error. Please try again.';
+      }
+    };
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = document.getElementById("employeeEmail").value.trim();
+      const password = document.getElementById("employeePass").value.trim();
+      const errorEl = document.getElementById("employeeErr");
+      errorEl.textContent = "";
+      handleLogin('employee', email, password, errorEl);
+    });
+
+    document.getElementById("adminLoginBtn").addEventListener("click", () => {
+      const email = document.getElementById("adminEmail").value.trim();
+      const password = document.getElementById("adminPass").value.trim();
+      const errorEl = document.getElementById("adminErr");
+      errorEl.textContent = "";
+      handleLogin('admin', email, password, errorEl);
+    });
+
+    document.getElementById("hrLoginBtn").addEventListener("click", () => {
+      const email = document.getElementById("hrEmail").value.trim();
+      const password = document.getElementById("hrPass").value.trim();
+      const errorEl = document.getElementById("hrErr");
+      errorEl.textContent = "";
+      handleLogin('hr', email, password, errorEl);
+    });
+
+    // Add Enter-key submit support for each role's inputs
+    function addEnterSubmit(inputIds, btnId) {
+      inputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const btn = document.getElementById(btnId);
+            if (btn) btn.click();
+          }
+        });
+      });
+    }
+
+    // Employee
+    addEnterSubmit(['employeeEmail', 'employeePass'], 'loginBtn');
+    // Admin
+    addEnterSubmit(['adminEmail', 'adminPass'], 'adminLoginBtn');
+    // HR
+    addEnterSubmit(['hrEmail', 'hrPass'], 'hrLoginBtn');
+  </script>
+</body>
+</html>

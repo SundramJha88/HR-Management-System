@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - VAAU</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="layoutContainer"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Admin Dashboard</h1>
+      <p>Welcome to Admin Panel</p>
+    </div>
+
+    <div class="admin-stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value" id="statTotal">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Employees</div>
+        <div class="stat-value" id="statEmployee">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">HR Staff</div>
+        <div class="stat-value" id="statHR">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Admin Users</div>
+        <div class="stat-value" id="statAdmin">0</div>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <div class="admin-card">
+        <h3>Users Management</h3>
+        <p>Manage all employees, HR staff, and admin users</p>
+        <a href="users-management.html" class="btn primary">Go to Management</a>
+      </div>
+      <div class="admin-card">
+        <h3>Reports</h3>
+        <p>View attendance and leave reports</p>
+        <a href="reports.html" class="btn primary">View Reports</a>
+      </div>
+      <div class="admin-card">
+        <h3>Settings</h3>
+        <p>Configure system settings</p>
+        <a href="settings.html" class="btn primary">Go to Settings</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const loadLayout = async () => {
+      const res = await fetch('layout.html');
+      const html = await res.text();
+      document.getElementById('layoutContainer').innerHTML = html;
+      window.dispatchEvent(new Event('layoutLoaded'));
+    };
+
+    const loadStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:5000/admin/stats', {
+          headers: { 'auth-token': token }
+        });
+        const data = await res.json();
+        document.getElementById('statTotal').textContent = data.total || 0;
+        document.getElementById('statEmployee').textContent = data.employee || 0;
+        document.getElementById('statHR').textContent = data.hr || 0;
+        document.getElementById('statAdmin').textContent = data.admin || 0;
+      } catch (e) {
+        console.error('Stats load failed', e);
+      }
+    };
+
+    loadLayout();
+    setTimeout(loadStats, 500);
+  </script>
+</body>
+</html>

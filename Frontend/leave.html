@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>VAAU - Leave</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<script>
+  if (!localStorage.getItem("loggedInEmp")) {
+    window.location.href = "login.html";
+  }
+
+  // Validate session on page load
+  async function validateAndRedirect() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "login.html";
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:5000/auth/me", {
+        method: "GET",
+        headers: {
+          "auth-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+      if (!res.ok) {
+        localStorage.clear();
+        window.location.href = "login.html";
+      }
+    } catch (e) {
+      console.error("Validation error:", e);
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+  }
+  validateAndRedirect();
+</script>
+
+<body>
+  <div id="layout"></div>
+
+  <script>
+    fetch("layout.html")
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("layout").innerHTML = data;
+        window.dispatchEvent(new Event("layoutLoaded"));
+      });
+  </script>
+
+  <div class="dashboard">
+    <section class="card">
+      <h3>Leave Management</h3>
+      <p>Leave management content goes here.</p>
+    </section>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>VAAU - New Hire</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .newhire-form table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    .newhire-form th {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+      font-weight: bold;
+    }
+    .newhire-form td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    .newhire-form input, .newhire-form select {
+      width: 100%;
+      padding: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+    .newhire-form label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .form-section {
+      margin-top: 25px;
+    }
+    .form-row {
+      display: flex;
+      gap: 20px;
+      margin-top: 10px;
+    }
+    .form-row div {
+      flex: 1;
+    }
+    .submit-btn {
+      margin-top: 20px;
+      padding: 12px 30px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+    .submit-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<script>
+  if (!localStorage.getItem("loggedInEmp")) {
+    window.location.href = "login.html";
+  }
+</script>
+
+<body>
+  <div id="layout"></div>
+
+  <script>
+    fetch("layout.html")
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("layout").innerHTML = data;
+        window.dispatchEvent(new Event("layoutLoaded"));
+      });
+  </script>
+
+  <div class="dashboard">
+    <section class="card" style="max-width:1300px; margin:0 auto;">
+      <h3>New Hire Information Form</h3>
+
+      <form id="newHireForm" class="newhire-form">
+        <table>
+          <tr>
+            <td style="font-weight:bold; width:30%;">VAAU TechnoSoft Pvt Ltd</td>
+            <td style="text-align:center; font-size:18px; font-weight:bold;">New Hire Information Form</td>
+            <td style="text-align:center; font-weight:bold;">VAAU ID</td>
+          </tr>
+        </table>
+
+        <div class="form-section">
+          <h4>Personal Information</h4>
+          <table>
+            <tr>
+              <td style="width:25%;"><label>Title *</label><input name="title" required/></td>
+              <td style="width:25%;"><label>First Name *</label><input name="firstName" required/></td>
+              <td style="width:25%;"><label>Last Name *</label><input name="lastName" required/></td>
+              <td style="width:25%;"><label>Known As *</label><input name="knownAs" required/></td>
+            </tr>
+            <tr>
+              <td><label>Date of Birth *</label><input type="date" name="dob" required/></td>
+              <td><label>Age</label><input name="age"/></td>
+              <td><label>Nationality *</label><input name="nationality" required/></td>
+              <td><label>Country of Work *</label><input name="workCountry" required/></td>
+            </tr>
+            <tr>
+              <td><label>Gender *</label><input name="gender" required/></td>
+              <td><label>Marital Status *</label><input name="maritalStatus" required/></td>
+              <td><label>PAN No *</label><input name="pan" required/></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="4"><label>Father's Name *</label><input name="fatherName" required/></td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="form-section">
+          <h4>Education Details</h4>
+          <table>
+            <tr>
+              <th>Establishment *</th>
+              <th>Institute *</th>
+              <th>Country *</th>
+              <th>Certificate *</th>
+              <th>Branch *</th>
+              <th>Score *</th>
+              <th>Start Date *</th>
+              <th>End Date *</th>
+            </tr>
+            <tr>
+              <td><input name="edu1_est"/></td>
+              <td><input name="edu1_inst"/></td>
+              <td><input name="edu1_ctry"/></td>
+              <td><input name="edu1_cert"/></td>
+              <td><input name="edu1_branch"/></td>
+              <td><input name="edu1_score"/></td>
+              <td><input type="date" name="edu1_start"/></td>
+              <td><input type="date" name="edu1_end"/></td>
+            </tr>
+            <tr>
+              <td><input name="edu2_est"/></td>
+              <td><input name="edu2_inst"/></td>
+              <td><input name="edu2_ctry"/></td>
+              <td><input name="edu2_cert"/></td>
+              <td><input name="edu2_branch"/></td>
+              <td><input name="edu2_score"/></td>
+              <td><input type="date" name="edu2_start"/></td>
+              <td><input type="date" name="edu2_end"/></td>
+            </tr>
+            <tr>
+              <td><input name="edu3_est"/></td>
+              <td><input name="edu3_inst"/></td>
+              <td><input name="edu3_ctry"/></td>
+              <td><input name="edu3_cert"/></td>
+              <td><input name="edu3_branch"/></td>
+              <td><input name="edu3_score"/></td>
+              <td><input type="date" name="edu3_start"/></td>
+              <td><input type="date" name="edu3_end"/></td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="form-section">
+          <h4>Previous Experience</h4>
+          <table>
+            <tr>
+              <th>Organization</th>
+              <th>Designation</th>
+              <th>Industry</th>
+              <th>City</th>
+              <th>Country</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+            </tr>
+            <tr>
+              <td><input name="exp1_org"/></td>
+              <td><input name="exp1_des"/></td>
+              <td><input name="exp1_ind"/></td>
+              <td><input name="exp1_city"/></td>
+              <td><input name="exp1_ctry"/></td>
+              <td><input type="date" name="exp1_start"/></td>
+              <td><input type="date" name="exp1_end"/></td>
+            </tr>
+            <tr>
+              <td><input name="exp2_org"/></td>
+              <td><input name="exp2_des"/></td>
+              <td><input name="exp2_ind"/></td>
+              <td><input name="exp2_city"/></td>
+              <td><input name="exp2_ctry"/></td>
+              <td><input type="date" name="exp2_start"/></td>
+              <td><input type="date" name="exp2_end"/></td>
+            </tr>
+            <tr>
+              <td><input name="exp3_org"/></td>
+              <td><input name="exp3_des"/></td>
+              <td><input name="exp3_ind"/></td>
+              <td><input name="exp3_city"/></td>
+              <td><input name="exp3_ctry"/></td>
+              <td><input type="date" name="exp3_start"/></td>
+              <td><input type="date" name="exp3_end"/></td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="form-section">
+          <h4>Declaration</h4>
+          <table>
+            <tr>
+              <td style="text-align:center; padding:15px;">
+                I hereby declare that all information provided above is true and correct to the best of my knowledge and belief.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="form-row">
+                  <div>
+                    <label>Name</label>
+                    <input name="decName"/>
+                  </div>
+                  <div>
+                    <label>Signature</label>
+                    <input name="decSign"/>
+                  </div>
+                  <div>
+                    <label>Date</label>
+                    <input type="date" name="decDate"/>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align:center;">
+          <button class="submit-btn" type="submit">Submit Form</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    document.getElementById("newHireForm").addEventListener("submit", async function(event){
+      event.preventDefault();
+
+      let formData = new FormData(this);
+      let data = Object.fromEntries(formData.entries());
+
+      try {
+        let res = await fetch("http://localhost:5000/newhire/submit", {
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "auth-token": localStorage.getItem("token")
+          },
+          body:JSON.stringify(data)
+        });
+
+        let out = await res.json();
+        if(res.ok) {
+          alert(out.message || "New Hire form submitted successfully");
+          document.getElementById("newHireForm").reset();
+        } else {
+          alert(out.message || "Error submitting form");
+        }
+      } catch(e) {
+        console.error("Error:", e);
+        alert("Failed to submit form. Please try again.");
+      }
+    });
+  </script>
+
+  <script src="script.js"></script>
+</body>
+</html>

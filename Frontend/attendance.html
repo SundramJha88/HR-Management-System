@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>VAAU - Attendance</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<script>
+  if (!localStorage.getItem("loggedInEmp")) {
+    window.location.href = "login.html";
+  }
+</script>
+
+<body>
+  <div id="layout"></div>
+
+  <script>
+    fetch("layout.html")
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("layout").innerHTML = data;
+        window.dispatchEvent(new Event("layoutLoaded"));
+      });
+  </script>
+
+  <div class="dashboard">
+
+    <section class="card attendance-card">
+      <h3>Attendance</h3>
+
+      <div class="big-circle" id="bigCircle">
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="status-indicators">
+          <span class="status-dot" id="statusDot" title="Status"></span>
+        </div>
+        <div class="circle-content">
+          <div id="workTimer">00:00:00</div>
+          <div class="small-label">Working Hours</div>
+        </div>
+      </div>
+
+      <div class="punch-info">
+        <div><small>Punch In</small><div id="punchInTime">--:--</div></div>
+        <div><small>Punch Out</small><div id="punchOutTime">--:--</div></div>
+      </div>
+
+      <div class="attendance-actions">
+        <button id="btnPunch" class="btn primary">Punch In</button>
+        <button id="btnHalf" class="btn outline">Half Day</button>
+        <button id="btnPunchOut" class="btn outline">Punch Out</button>
+        <button id="btnApplyLeave" class="btn outline">Apply Leave</button>
+      </div>
+    </section>
+    <section class="center-col">
+      <div class="card greeting-card compact">
+        <div class="greet-left">
+          <h2 id="greet">Good Morning</h2>
+          <p id="greetSub">Have a productive day!</p>
+        </div>
+        <div class="greet-ill">
+          <img src="logo2.png"/>
+        </div>
+      </div>
+
+      
+
+      <div class="card punchin-card">
+        <div class="punchin-header">
+          <h4>Punch-in & Out</h4>
+          <div class="nav-arrows">
+            <button id="punchInPrev" class="btn-arrow prev-arrow" aria-label="Previous">‹</button>
+            <button id="punchInNext" class="btn-arrow next-arrow" aria-label="Next">›</button>
+          </div>
+        </div>
+        <div id="punchInContainer" class="punchin-container">
+        </div>
+      </div>
+    </section>
+    <aside class="right-col">
+      <div class="card calendar-card">
+        <div class="cal-head">
+        </div>
+        <div id="calendarWrap">
+          <div class="calendar-container">
+            <div class="calendar-header">
+              <button id="prevCal" class="btn ghost" aria-label="Previous Month">‹</button>
+              <div class="month-year" id="monthYear">-- ----</div>
+              <button id="nextCal" class="btn ghost" aria-label="Next Month">›</button>
+            </div>
+            <table id="calendarTable">
+              <thead>
+                <tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Weekly-Hours</th></tr>
+              </thead>
+              <tbody id="calendarBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card leave-card">
+        <h4>Leave Stats</h4>
+        <div class="leave-circle">
+          <div id="leaveDays">0</div>
+          <small>Days</small>
+        </div>
+        <div class="leave-ratio" id="leaveRatio">0 / 15</div>
+      </div>
+    </aside>
+  </div>
+  <div id="leaveModal" class="modal">
+    <div class="modal-box">
+      <h3>Apply for Leave</h3>
+      <label for="leaveDate">Date</label>
+      <input type="date" id="leaveDate" />
+      
+      <label for="leaveReason">Reason</label>
+      <textarea id="leaveReason" placeholder="Please provide reason for leave"></textarea>
+      
+      <div class="modal-actions">
+        <button id="closeLeave" class="btn ghost">Cancel</button>
+        <button id="submitLeave" class="btn primary">Submit</button>
+      </div>
+    </div>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>

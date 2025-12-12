@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - VAAU Admin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="layoutContainer"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>System Settings</h1>
+      <p>Configure system parameters</p>
+    </div>
+
+    <div class="settings-grid">
+      <div class="settings-card">
+        <h3>Leave Settings</h3>
+        <label>Maximum Annual Leave</label>
+        <input type="number" id="maxAnnualLeave" min="1" max="365" placeholder="15">
+        
+        <label>Maximum Casual Leave</label>
+        <input type="number" id="maxCasualLeave" min="1" max="365" placeholder="10">
+        
+        <button class="btn primary" onclick="saveLeaveSettings()">Save Leave Settings</button>
+      </div>
+
+      <div class="settings-card">
+        <h3>Attendance Settings</h3>
+        <label>Work Start Time (HH:MM)</label>
+        <input type="time" id="workStartTime" value="09:00">
+        
+        <label>Work End Time (HH:MM)</label>
+        <input type="time" id="workEndTime" value="18:00">
+        
+        <button class="btn primary" onclick="saveAttendanceSettings()">Save Attendance Settings</button>
+      </div>
+
+      <div class="settings-card">
+        <h3>System Settings</h3>
+        <label>
+          <input type="checkbox" id="emailNotifications">
+          Enable Email Notifications
+        </label>
+        
+        <label>
+          <input type="checkbox" id="smsAlerts">
+          Enable SMS Alerts
+        </label>
+        
+        <button class="btn primary" onclick="saveSystemSettings()">Save System Settings</button>
+      </div>
+
+      <!-- <div class="settings-card">
+        <h3>Backup & Maintenance</h3>
+        <p>Manage system backups and maintenance tasks</p>
+        
+        <button class="btn secondary" onclick="triggerBackup()">Create Backup</button>
+        <button class="btn secondary" onclick="clearLogs()">Clear Logs</button>
+      </div> -->
+    </div>
+
+    <!-- <div class="info-box">
+      <h4>Info</h4>
+      <p>System Version: 1.0.0</p>
+      <p>Last Backup: Not backed up yet</p>
+      <p>Database: Connected</p>
+    </div> -->
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const loadLayout = async () => {
+      const res = await fetch('layout.html');
+      const html = await res.text();
+      document.getElementById('layoutContainer').innerHTML = html;
+      window.dispatchEvent(new Event('layoutLoaded'));
+    };
+
+    const loadSettings = () => {
+      const settings = JSON.parse(localStorage.getItem('systemSettings') || '{}');
+      document.getElementById('maxAnnualLeave').value = settings.maxAnnualLeave || 15;
+      document.getElementById('maxCasualLeave').value = settings.maxCasualLeave || 10;
+      document.getElementById('workStartTime').value = settings.workStartTime || '09:00';
+      document.getElementById('workEndTime').value = settings.workEndTime || '18:00';
+      document.getElementById('emailNotifications').checked = settings.emailNotifications || false;
+      document.getElementById('smsAlerts').checked = settings.smsAlerts || false;
+    };
+
+    const saveLeaveSettings = () => {
+      const settings = JSON.parse(localStorage.getItem('systemSettings') || '{}');
+      settings.maxAnnualLeave = parseInt(document.getElementById('maxAnnualLeave').value);
+      settings.maxCasualLeave = parseInt(document.getElementById('maxCasualLeave').value);
+      localStorage.setItem('systemSettings', JSON.stringify(settings));
+      alert('Leave settings saved successfully');
+    };
+
+    const saveAttendanceSettings = () => {
+      const settings = JSON.parse(localStorage.getItem('systemSettings') || '{}');
+      settings.workStartTime = document.getElementById('workStartTime').value;
+      settings.workEndTime = document.getElementById('workEndTime').value;
+      localStorage.setItem('systemSettings', JSON.stringify(settings));
+      alert('Attendance settings saved successfully');
+    };
+
+    const saveSystemSettings = () => {
+      const settings = JSON.parse(localStorage.getItem('systemSettings') || '{}');
+      settings.emailNotifications = document.getElementById('emailNotifications').checked;
+      settings.smsAlerts = document.getElementById('smsAlerts').checked;
+      localStorage.setItem('systemSettings', JSON.stringify(settings));
+      alert('System settings saved successfully');
+    };
+
+    const triggerBackup = () => {
+      alert('Backup functionality would be implemented with backend integration');
+    };
+
+    const clearLogs = () => {
+      if (confirm('Are you sure you want to clear all logs? This cannot be undone.')) {
+        alert('Logs cleared successfully');
+      }
+    };
+
+    loadLayout();
+    setTimeout(loadSettings, 500);
+  </script>
+</body>
+</html>
