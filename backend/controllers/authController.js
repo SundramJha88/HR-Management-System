@@ -42,7 +42,6 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-    // try by email, then by name
     let user = null;
     if (email) user = await User.findOne({ email });
     if (!user) user = await User.findOne({ name: email });
@@ -51,13 +50,11 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: 'User not found' });
     }
 
-    // Determine if stored password looks like a bcrypt hash
     const isHashed = typeof user.password === 'string' && /^\$2[aby]\$/.test(user.password);
     let ok = false;
     if (isHashed) {
       ok = await bcrypt.compare(password, user.password);
     } else {
-      // legacy/plain-text password fallback: accept if equal and then re-hash
       ok = password === user.password;
       if (ok) {
         try {

@@ -693,7 +693,7 @@ punch-info div {
 }
 
 .leave {
-  background: #fff9c4;
+  background: #c8e6c9;
 }
 
 .weekend {
@@ -1109,8 +1109,8 @@ punch-info div {
 }
 
 .day-status.leave {
-  background: #fff9c4;
-  color: #f9a825;
+  background: #c8e6c9;
+  color: #2e7d32;
 }
 
 .day-status.absent, .day-status.missedout {
@@ -1447,4 +1447,3 @@ punch-info div {
   min-height: calc(100vh - 64px);
   background: linear-gradient(180deg, #f7fbff, #ffffff);
 }
-

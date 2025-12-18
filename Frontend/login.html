@@ -91,8 +91,8 @@
     </div>
 
     <div class="login-form active" id="employeeForm">
-      <label>Employee Email</label>
-      <input id="employeeEmail" placeholder="Enter employee email" type="email" />
+      <label>Employee Email or VAAU ID</label>
+      <input id="employeeEmail" placeholder="Enter email or VAAU ID" type="text" />
       <label>Password</label>
       <input id="employeePass" type="password" placeholder="Enter password" />
       <button id="loginBtn" class="btn primary">Employee Login</button>
@@ -100,8 +100,8 @@
     </div>
 
     <div class="login-form" id="adminForm">
-      <label>Admin Email</label>
-      <input id="adminEmail" placeholder="Enter admin email" type="email" />
+      <label>Admin Email or VAAU ID</label>
+      <input id="adminEmail" placeholder="Enter email or VAAU ID" type="text" />
       <label>Password</label>
       <input id="adminPass" type="password" placeholder="Enter password" />
       <button id="adminLoginBtn" class="btn primary">Admin Login</button>
@@ -109,8 +109,8 @@
     </div>
 
     <div class="login-form" id="hrForm">
-      <label>HR Email</label>
-      <input id="hrEmail" placeholder="Enter HR email" type="email" />
+      <label>HR Email or VAAU ID</label>
+      <input id="hrEmail" placeholder="Enter email or VAAU ID" type="text" />
       <label>Password</label>
       <input id="hrPass" type="password" placeholder="Enter password" />
       <button id="hrLoginBtn" class="btn primary">HR Login</button>
@@ -135,7 +135,7 @@
 
     const handleLogin = async (role, email, password, errorEl) => {
       if (!email || !password) {
-        errorEl.textContent = 'Email and password required';
+        errorEl.textContent = 'Identifier and password required';
         return;
       }
 
@@ -143,21 +143,40 @@
         const res = await fetch("http://localhost:5000/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, targetRole: role })
         });
 
         const data = await res.json();
 
         if (data && data.token) {
+          sessionStorage.setItem("token", data.token);
+          sessionStorage.setItem("userId", data.id);
+          sessionStorage.setItem("userName", data.name);
+          sessionStorage.setItem("userRole", data.role);
+          sessionStorage.setItem("employeeId", data.employeeId || "");
+          sessionStorage.setItem("active", String(data.active));
+          sessionStorage.setItem("userDepartment", data.department || "");
+          sessionStorage.setItem("loggedInEmp", JSON.stringify({
+            name: data.name,
+            role: data.role,
+            department: data.department,
+            employeeId: data.employeeId || "",
+            active: data.active
+          }));
+          
           localStorage.setItem("token", data.token);
           localStorage.setItem("userId", data.id);
           localStorage.setItem("userName", data.name);
           localStorage.setItem("userRole", data.role);
+          localStorage.setItem("employeeId", data.employeeId || "");
+          localStorage.setItem("active", String(data.active));
           localStorage.setItem("userDepartment", data.department || "");
           localStorage.setItem("loggedInEmp", JSON.stringify({
             name: data.name,
             role: data.role,
-            department: data.department
+            department: data.department,
+            employeeId: data.employeeId || "",
+            active: data.active
           }));
 
           const r = (data.role || '').toLowerCase();
@@ -201,7 +220,6 @@
       handleLogin('hr', email, password, errorEl);
     });
 
-    // Add Enter-key submit support for each role's inputs
     function addEnterSubmit(inputIds, btnId) {
       inputIds.forEach(id => {
         const el = document.getElementById(id);
@@ -216,11 +234,8 @@
       });
     }
 
-    // Employee
     addEnterSubmit(['employeeEmail', 'employeePass'], 'loginBtn');
-    // Admin
     addEnterSubmit(['adminEmail', 'adminPass'], 'adminLoginBtn');
-    // HR
     addEnterSubmit(['hrEmail', 'hrPass'], 'hrLoginBtn');
   </script>
 </body>

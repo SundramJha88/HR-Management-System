@@ -18,11 +18,20 @@ router.post("/register", async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
+    let employeeId = null;
+    const finalRole = role || 'employee';
+    if (finalRole !== 'admin') {
+      const count = await User.countDocuments({ employeeId: { $regex: /^vaau\d+$/ } });
+      const nextNum = count + 1;
+      employeeId = `vaau${String(nextNum).padStart(4, '0')}`;
+    }
     const user = await User.create({
       name,
       email,
       password: hash,
-      role: role || 'employee',
+      role: finalRole,
+      employeeId,
+      active: true,
       department: department || null
     });
     return res.json({
@@ -30,6 +39,7 @@ router.post("/register", async (req, res) => {
       id: user._id,
       name: user.name,
       role: user.role,
+      employeeId: user.employeeId,
       department: user.department
     });
   } catch (err) {
@@ -40,12 +50,19 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+    const { email, password, targetRole } = req.body;
+    if (!email || !password) return res.status(400).json({ error: "Identifier and password required" });
 
-    let user = await User.findOne({ email });
-    if (!user) user = await User.findOne({ name: email });
+    const identifier = String(email).trim();
+    let user = await User.findOne({ email: identifier });
+    if (!user) user = await User.findOne({ employeeId: { $regex: new RegExp(`^${identifier}$`, 'i') } });
+    if (!user) user = await User.findOne({ name: identifier });
     if (!user) return res.status(400).json({ error: "User not found" });
+
+    if (user.active === false) return res.status(403).json({ error: "User inactive" });
+    if (targetRole && String(user.role).toLowerCase() !== String(targetRole).toLowerCase()) {
+      return res.status(403).json({ error: "Role mismatch" });
+    }
 
     const isHashed = typeof user.password === "string" && /^\$2[aby]\$/.test(user.password);
     let ok = false;
@@ -66,7 +83,7 @@ router.post("/login", async (req, res) => {
 
     const role = String(user.role || "employee").toLowerCase();
     const token = jwt.sign(
-      { id: user._id, name: user.name, role, department: user.department },
+      { id: user._id, name: user.name, role, department: user.department, employeeId: user.employeeId, active: user.active },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -76,6 +93,8 @@ router.post("/login", async (req, res) => {
       id: user._id,
       name: user.name,
       role,
+      employeeId: user.employeeId,
+      active: user.active,
       department: user.department
     });
   } catch (err) {

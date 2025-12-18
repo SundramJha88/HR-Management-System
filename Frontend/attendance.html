@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css"/>
 </head>
 <script>
-  if (!localStorage.getItem("loggedInEmp")) {
+  if (!sessionStorage.getItem("loggedInEmp")) {
     window.location.href = "login.html";
   }
 </script>

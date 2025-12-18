@@ -28,13 +28,13 @@
             <tr>
               <th>Employee Name</th>
               <th>Email</th>
+              <th>Employee ID</th>
               <th>Role</th>
-              <th>Date</th>
-              <th>Status</th>
+              <th>Today Status</th>
             </tr>
           </thead>
           <tbody id="attendanceTableBody">
-            <tr><td colspan="5" style="text-align:center;padding:20px;">Loading attendance data...</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:20px;">Loading attendance data...</td></tr>
           </tbody>
         </table>
       </div>
@@ -48,13 +48,14 @@
             <tr>
               <th>Employee Name</th>
               <th>Email</th>
+              <th>Employee ID</th>
               <th>Role</th>
               <th>Date</th>
               <th>Reason</th>
             </tr>
           </thead>
           <tbody id="leaveTableBody">
-            <tr><td colspan="5" style="text-align:center;padding:20px;">Loading leave data...</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:20px;">Loading leave data...</td></tr>
           </tbody>
         </table>
       </div>
@@ -79,60 +80,65 @@
 
     const loadAttendanceReport = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const res = await fetch('http://localhost:5000/admin/attendance-report', {
           headers: { 'auth-token': token }
         });
         const data = await res.json();
         const tbody = document.getElementById('attendanceTableBody');
-        if (!data || data.length === 0) {
+        const rows = Array.isArray(data) ? data.filter(r => r && r.userId) : [];
+        if (!rows || rows.length === 0) {
           tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No attendance records found</td></tr>';
           return;
         }
-        tbody.innerHTML = data.map(record => {
-          const userName = record.userId?.name || 'Unknown';
-          const userEmail = record.userId?.email || 'N/A';
+        tbody.innerHTML = rows.map(record => {
+          const userName = record.userId?.name || '';
+          const userEmail = record.userId?.email || '';
+          const employeeId = record.userId?.employeeId || '';
           const userRole = record.userId?.role || 'N/A';
-          const date = new Date(record.date).toLocaleDateString() || record.date;
-          const status = record.status || 'Present';
+          const raw = String(record.status || '').toLowerCase();
+          const status = raw === 'early' || raw === 'early punchout' ? 'Early punchout' : (raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'Absent');
           return `
             <tr>
               <td>${userName}</td>
               <td>${userEmail}</td>
+              <td>${employeeId}</td>
               <td><span class="badge">${userRole}</span></td>
-              <td>${date}</td>
               <td><span class="badge success">${status}</span></td>
             </tr>
           `;
         }).join('');
       } catch (e) {
         console.error('Attendance report error:', e);
-        document.getElementById('attendanceTableBody').innerHTML = '<tr><td colspan="5" style="color:red;text-align:center;">Failed to load attendance data</td></tr>';
+        document.getElementById('attendanceTableBody').innerHTML = '<tr><td colspan="6" style="color:red;text-align:center;">Failed to load attendance data</td></tr>';
       }
     };
 
     const loadLeaveReport = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const res = await fetch('http://localhost:5000/admin/leave-report', {
           headers: { 'auth-token': token }
         });
         const data = await res.json();
         const tbody = document.getElementById('leaveTableBody');
-        if (!data || data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No leave records found</td></tr>';
+        const rows = Array.isArray(data) ? data.filter(r => r && r.userId) : [];
+        if (!rows || rows.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">No leave records found</td></tr>';
           return;
         }
-        tbody.innerHTML = data.map(record => {
-          const userName = record.userId?.name || 'Unknown';
-          const userEmail = record.userId?.email || 'N/A';
+        tbody.innerHTML = rows.map(record => {
+          const userName = record.userId?.name || '';
+          const userEmail = record.userId?.email || '';
+          const employeeId = record.userId?.employeeId || '';
           const userRole = record.userId?.role || 'N/A';
           const date = new Date(record.date).toLocaleDateString() || record.date;
-          const reason = record.reason || 'N/A';
+          const reason = record.reason || '';
           return `
             <tr>
               <td>${userName}</td>
               <td>${userEmail}</td>
+              <td>${employeeId}</td>
               <td><span class="badge">${userRole}</span></td>
               <td>${date}</td>
               <td>${reason}</td>
@@ -141,15 +147,96 @@
         }).join('');
       } catch (e) {
         console.error('Leave report error:', e);
-        document.getElementById('leaveTableBody').innerHTML = '<tr><td colspan="5" style="color:red;text-align:center;">Failed to load leave data</td></tr>';
+        document.getElementById('leaveTableBody').innerHTML = '<tr><td colspan="6" style="color:red;text-align:center;">Failed to load leave data</td></tr>';
       }
     };
 
+    const loadPendingLeavesForHR = async () => {
+      const role = (localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || '').toLowerCase();
+      if (role !== 'hr') return;
+      const container = document.createElement('div');
+      container.style.marginTop = '20px';
+      container.innerHTML = `
+        <h3>Pending Leave Requests</h3>
+        <div class="users-table-wrapper">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Email</th>
+                <th>Employee ID</th>
+                <th>Date</th>
+                <th>Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="pendingLeaveBody">
+              <tr><td colspan="6" style="text-align:center;padding:20px;">Loading pending leaves...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+      document.getElementById('leaveTab').appendChild(container);
+      try {
+        const token = sessionStorage.getItem('token');
+        const res = await fetch('http://localhost:5000/leave/pending', {
+          headers: { 'auth-token': token }
+        });
+        const data = await res.json();
+        const tbody = document.getElementById('pendingLeaveBody');
+        if (!Array.isArray(data) || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">No pending requests</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.map(l => {
+          const u = l.userId || {};
+          const date = new Date(l.date).toLocaleDateString() || l.date;
+          return `
+            <tr data-id="${l._id}">
+              <td>${u.name || ''}</td>
+              <td>${u.email || ''}</td>
+              <td>${u.employeeId || ''}</td>
+              <td>${date}</td>
+              <td>${l.reason || ''}</td>
+              <td>
+                <button class="btn small outline approve-btn">Approve</button>
+                <button class="btn small danger reject-btn">Reject</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Pending leave error:', e);
+        const tbody = document.getElementById('pendingLeaveBody');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:red;">Failed to load pending leaves</td></tr>';
+      }
+    };
+
+    document.addEventListener('click', async (e) => {
+      const approve = e.target.closest('.approve-btn');
+      const reject = e.target.closest('.reject-btn');
+      if (!approve && !reject) return;
+      const tr = e.target.closest('tr');
+      const id = tr.getAttribute('data-id');
+      const token = sessionStorage.getItem('token');
+      const url = approve ? `http://localhost:5000/leave/${id}/approve` : `http://localhost:5000/leave/${id}/reject`;
+      try {
+        const res = await fetch(url, { method: 'POST', headers: { 'auth-token': token } });
+        const data = await res.json();
+        if (data && data.message) {
+          tr.remove();
+        } else {
+          alert('Action failed');
+        }
+      } catch (e) {
+        alert('Network error');
+      }
+    });
+
     loadLayout();
-    setTimeout(() => {
-      loadAttendanceReport();
-      loadLeaveReport();
-    }, 500);
+    loadAttendanceReport();
+    loadLeaveReport();
+    loadPendingLeavesForHR();
   </script>
 </body>
 </html>

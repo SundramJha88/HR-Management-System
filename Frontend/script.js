@@ -7,7 +7,7 @@
   const apiFetch = async (path, opts = {}) => {
     const headers = opts.headers || {};
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
-    const token = localStorage.getItem(tokenKey);
+    const token = sessionStorage.getItem(tokenKey);
     if (token) headers["auth-token"] = token;
     const cfg = Object.assign({}, opts, { headers });
     try {
@@ -20,19 +20,25 @@
   };
 
   const syncFromServer = async () => {
-    const token = localStorage.getItem(tokenKey);
+    const token = sessionStorage.getItem(tokenKey);
     if (!token) return;
+    const getUserId = () => sessionStorage.getItem(userIdKey) || localStorage.getItem(userIdKey) || "";
+    const uid = getUserId();
+    const makeKey = (ns, dateKey) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    const lsSet = (ns, dateKey, val) => {
+      try { localStorage.setItem(makeKey(ns, dateKey), val); } catch (e) {}
+    };
     const att = await apiFetch("/attendance/history", { method: "GET" });
     if (att && Array.isArray(att)) {
       att.forEach(a => {
         try {
           const dateKey = a.date;
-          if (a.punchIn) localStorage.setItem(`punchIn_${dateKey}`, a.punchIn);
-          if (a.punchOut) localStorage.setItem(`punchOut_${dateKey}`, a.punchOut);
-          if (a.totalHours) localStorage.setItem(`workHours_${dateKey}`, a.totalHours);
-          if (a.status === "halfday") localStorage.setItem(`halfDay_${dateKey}`, "true");
-          if (a.status === "present" || a.status === "fullday" || a.status === "fullDay") localStorage.setItem(`fullDay_${dateKey}`, "true");
-          if (a.status === "leave") localStorage.setItem(`leave_${dateKey}`, "true");
+          if (a.punchIn) lsSet("punchIn", dateKey, a.punchIn);
+          if (a.punchOut) lsSet("punchOut", dateKey, a.punchOut);
+          if (a.totalHours) lsSet("workHours", dateKey, a.totalHours);
+          if (a.status === "halfday") lsSet("halfDay", dateKey, "true");
+          if (a.status === "present" || a.status === "fullday" || a.status === "fullDay") lsSet("fullDay", dateKey, "true");
+          if (a.status === "leave") lsSet("leave", dateKey, "true");
         } catch (e) {}
       });
     }
@@ -40,8 +46,8 @@
     if (leaves && Array.isArray(leaves)) {
       leaves.forEach(l => {
         try {
-          localStorage.setItem(`leave_${l.date}`, "true");
-          if (l.reason) localStorage.setItem(`leaveReason_${l.date}`, l.reason);
+          lsSet("leave", l.date, "true");
+          if (l.reason) lsSet("leaveReason", l.date, l.reason);
         } catch (e) {}
       });
     }
@@ -53,10 +59,10 @@
 (() => {
   const page = location.pathname.split('/').pop().toLowerCase();
   if (page === 'login.html') return;
-  const token = localStorage.getItem('token');
-  const emp = localStorage.getItem('loggedInEmp');
+  const token = sessionStorage.getItem('token');
+  const emp = sessionStorage.getItem('loggedInEmp');
   if (!token || !emp) {
-    localStorage.clear();
+    sessionStorage.clear();
     location.href = 'login.html';
     return;
   }
@@ -66,7 +72,39 @@
       const ok = !!(d && (d.id || d._id || (d.user && (d.user.id || d.user._id))));
       if (!ok) throw new Error();
     })
-    .catch(() => { localStorage.clear(); location.href = 'login.html'; });
+    .catch(() => { sessionStorage.clear(); location.href = 'login.html'; });
+})();
+
+(() => {
+  const page = location.pathname.split('/').pop().toLowerCase();
+  if (page === 'login.html') return;
+  const token = sessionStorage.getItem('token');
+  if (!token) return;
+  const refresh = () => {
+    if (typeof window.syncFromServer === 'function') {
+      window.syncFromServer();
+    }
+    fetch('http://localhost:5000/auth/me', { method: 'GET', headers: { 'auth-token': token } })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(() => {})
+      .catch(() => { sessionStorage.clear(); location.href = 'login.html'; });
+  };
+  setInterval(refresh, 120000);
+})();
+
+(() => {
+  const triggerAutoRefresh = () => {
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const doReload = () => { location.reload(); };
+    if (typeof window.syncFromServer === 'function' && token) {
+      Promise.resolve(window.syncFromServer()).then(() => {
+        setTimeout(doReload, 200);
+      }).catch(doReload);
+    } else {
+      doReload();
+    }
+  };
+  window.triggerAutoRefresh = triggerAutoRefresh;
 })();
 
 (() => {
@@ -277,6 +315,14 @@
             td.setAttribute("data-holiday", holidayName);
             td.title = holidayName;
           }
+          const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+          const uid = getUserId();
+          const makeKey = (ns, dk) => (uid ? `${ns}_${uid}_${dk}` : `${ns}_${dk}`);
+          const dkForCell = getDateKey(y, m, day);
+          const leaveApplied = localStorage.getItem(makeKey("leave", dkForCell));
+          if (leaveApplied) {
+            td.classList.add("leave");
+          }
           day++;
         }
         tr.appendChild(td);
@@ -285,7 +331,21 @@
       weeklyTd.classList.add("weekly-hours");
       if (weekStart !== null && weekStart <= totalDays) {
         const actualWeekEnd = weekEnd > totalDays ? totalDays : weekEnd;
-        const weeklyMinutes = calculateWeeklyHours(y, m, weekStart, actualWeekEnd);
+        const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+        const uid = getUserId();
+        const makeKey = (ns, dk) => (uid ? `${ns}_${uid}_${dk}` : `${ns}_${dk}`);
+        const calculateWeeklyHoursScoped = (yy, mm, ws, we) => {
+          let totalMinutes = 0;
+          for (let d = ws; d <= we; d++) {
+            if (d > 0 && d <= daysInMonth(yy, mm)) {
+              const dk = getDateKey(yy, mm, d);
+              const storedHours = localStorage.getItem(makeKey("workHours", dk));
+              if (storedHours) totalMinutes += parseTimeToMinutes(storedHours);
+            }
+          }
+          return totalMinutes;
+        };
+        const weeklyMinutes = calculateWeeklyHoursScoped(y, m, weekStart, actualWeekEnd);
         weeklyTd.textContent = formatHoursMinutes(weeklyMinutes);
       } else {
         weeklyTd.textContent = "";
@@ -463,14 +523,17 @@
     const punchInTime = formatTimeShort(startTime.getHours(), startTime.getMinutes());
     if (punchInTimeEl) punchInTimeEl.textContent = punchInTime;
     const dateKey = getDateKey();
-    if (!localStorage.getItem(`punchIn_${dateKey}`)) {
-      localStorage.setItem(`punchIn_${dateKey}`, punchInTime);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    if (!localStorage.getItem(mk("punchIn"))) {
+      localStorage.setItem(mk("punchIn"), punchInTime);
     }
     if (!(existingStartTime instanceof Date)) {
-      localStorage.setItem(`punchInTime_${dateKey}`, startTime.toISOString());
+      localStorage.setItem(mk("punchInTime"), startTime.toISOString());
     }
     if (punchOutTimeEl) punchOutTimeEl.textContent = "--:--";
-    localStorage.removeItem(`punchOut_${dateKey}`);
+    localStorage.removeItem(mk("punchOut"));
     timerInterval = setInterval(updateTimer, 1000);
     updateTimer();
     if (punchInBtn) {
@@ -505,23 +568,26 @@
     const punchOutTime = formatTimeShort(now.getHours(), now.getMinutes());
     if (punchOutTimeEl) punchOutTimeEl.textContent = punchOutTime;
     const dateKey = getDateKey();
-    localStorage.setItem(`punchOut_${dateKey}`, punchOutTime);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    localStorage.setItem(mk("punchOut"), punchOutTime);
     const timerValue = overrideTimerText || (workTimerEl ? workTimerEl.textContent || "00:00:00" : "00:00:00");
     if (workTimerEl && overrideTimerText) workTimerEl.textContent = overrideTimerText;
     if (workTimerEl) {
-      localStorage.setItem(`workHours_${dateKey}`, timerValue);
+      localStorage.setItem(mk("workHours"), timerValue);
       if (opts.forceHalfDay) {
-        localStorage.setItem(`halfDay_${dateKey}`, "true");
-        localStorage.removeItem(`fullDay_${dateKey}`);
+        localStorage.setItem(mk("halfDay"), "true");
+        localStorage.removeItem(mk("fullDay"));
       } else if (finalHours >= 5 && finalHours < 8) {
-        localStorage.setItem(`halfDay_${dateKey}`, "true");
-        localStorage.removeItem(`fullDay_${dateKey}`);
+        localStorage.setItem(mk("halfDay"), "true");
+        localStorage.removeItem(mk("fullDay"));
       } else if (finalHours >= 8) {
-        localStorage.setItem(`fullDay_${dateKey}`, "true");
-        localStorage.removeItem(`halfDay_${dateKey}`);
+        localStorage.setItem(mk("fullDay"), "true");
+        localStorage.removeItem(mk("halfDay"));
       } else {
-        localStorage.removeItem(`halfDay_${dateKey}`);
-        localStorage.removeItem(`fullDay_${dateKey}`);
+        localStorage.removeItem(mk("halfDay"));
+        localStorage.removeItem(mk("fullDay"));
       }
     }
     updateCircleStatus(finalHours);
@@ -590,9 +656,12 @@
 
   const loadSavedData = () => {
     const dateKey = getDateKey();
-    const savedPunchIn = localStorage.getItem(`punchIn_${dateKey}`);
-    const savedPunchOut = localStorage.getItem(`punchOut_${dateKey}`);
-    const savedWorkHours = localStorage.getItem(`workHours_${dateKey}`);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    const savedPunchIn = localStorage.getItem(mk("punchIn"));
+    const savedPunchOut = localStorage.getItem(mk("punchOut"));
+    const savedWorkHours = localStorage.getItem(mk("workHours"));
     if (savedPunchIn && punchInTimeEl) punchInTimeEl.textContent = savedPunchIn;
     if (savedPunchOut && punchOutTimeEl) punchOutTimeEl.textContent = savedPunchOut;
     if (savedPunchOut && savedWorkHours && workTimerEl) {
@@ -606,7 +675,7 @@
         updateProgress(totalHours);
       }
     }
-    const savedStartTime = localStorage.getItem(`punchInTime_${dateKey}`);
+    const savedStartTime = localStorage.getItem(mk("punchInTime"));
     if (savedStartTime && !savedPunchOut) {
       const resumeStart = new Date(savedStartTime);
       if (!isNaN(resumeStart)) {
@@ -638,10 +707,13 @@
   };
 
   if (punchInBtn) {
-    punchInBtn.addEventListener("click", () => {
+    punchInBtn.addEventListener("click", async () => {
       const dateKey = getDateKey();
-      const alreadyPunchedIn = !!localStorage.getItem(`punchInTime_${dateKey}`);
-      const alreadyPunchedOut = !!localStorage.getItem(`punchOut_${dateKey}`);
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      const alreadyPunchedIn = !!localStorage.getItem(mk("punchInTime"));
+      const alreadyPunchedOut = !!localStorage.getItem(mk("punchOut"));
       if (alreadyPunchedIn && !alreadyPunchedOut) {
         alert("You are already punched in.");
         return;
@@ -650,12 +722,10 @@
         alert("Today's punch out already recorded.");
         return;
       }
-      localStorage.setItem(`punchInTime_${dateKey}`, new Date().toISOString());
-      startTimer();
       try {
         const now = new Date();
         const time = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
-        fetch("http://localhost:5000/attendance/punchin", {
+        const res = await fetch("http://localhost:5000/attendance/punchin", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -666,19 +736,35 @@
             time,
             timeIso: now.toISOString()
           })
-        }).catch(()=>{});
-      } catch (e){}
+        });
+        if (res.ok) {
+          localStorage.setItem(mk("punchInTime"), new Date().toISOString());
+          startTimer();
+        } else {
+          let msg = "";
+          try {
+            const data = await res.json();
+            msg = data && data.error ? data.error : "";
+          } catch (e) {}
+          alert(msg || "Punch-in failed");
+        }
+      } catch (e) {
+        alert("Network error");
+      }
     });
   }
 
   if (punchOutBtn) {
     punchOutBtn.addEventListener("click", () => {
       const dateKey = getDateKey();
-      if (localStorage.getItem(`punchOut_${dateKey}`)) {
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      if (localStorage.getItem(mk("punchOut"))) {
         alert("You have already punched out today.");
         return;
       }
-      localStorage.removeItem(`punchInTime_${dateKey}`);
+      localStorage.removeItem(mk("punchInTime"));
       try {
         const now = new Date();
         const time = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
@@ -703,7 +789,10 @@
   if (halfDayBtn) {
     halfDayBtn.addEventListener("click", () => {
       const dateKey = getDateKey();
-      localStorage.removeItem(`punchInTime_${dateKey}`);
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      localStorage.removeItem(mk("punchInTime"));
       handleHalfDay();
     });
   }
@@ -755,11 +844,14 @@
   };
   const getDayName = date => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
   const getStatusClass = dateKey => {
-    const halfDay = localStorage.getItem(`halfDay_${dateKey}`);
-    const fullDay = localStorage.getItem(`fullDay_${dateKey}`);
-    const leaveData = localStorage.getItem(`leave_${dateKey}`);
-    const punchIn = localStorage.getItem(`punchIn_${dateKey}`);
-    const punchOut = localStorage.getItem(`punchOut_${dateKey}`);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    const halfDay = localStorage.getItem(mk("halfDay"));
+    const fullDay = localStorage.getItem(mk("fullDay"));
+    const leaveData = localStorage.getItem(mk("leave"));
+    const punchIn = localStorage.getItem(mk("punchIn"));
+    const punchOut = localStorage.getItem(mk("punchOut"));
     if (leaveData) return "leave";
     if (halfDay) return "halfday";
     if (fullDay) return "present";
@@ -784,7 +876,7 @@
     return "present";
   };
   const getStatusText = statusClass => {
-    const statusMap = { present: "✓", halfday: "½", leave: "L", absent: "✕", missedout: "✕" };
+    const statusMap = { present: "E", halfday: "½", leave: "L", absent: "✕", missedout: "✕" };
     return statusMap[statusClass] || "";
   };
   const render = startDayOffset => {
@@ -794,9 +886,12 @@
       date.setDate(date.getDate() - (startDayOffset - i));
       date.setHours(0, 0, 0, 0);
       const dateKey = getDateKey(date);
-      const punchIn = localStorage.getItem(`punchIn_${dateKey}`) || "--:--";
-      const punchOut = localStorage.getItem(`punchOut_${dateKey}`) || "--:--";
-      const workHours = localStorage.getItem(`workHours_${dateKey}`) || "00:00:00";
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      const punchIn = localStorage.getItem(mk("punchIn")) || "--:--";
+      const punchOut = localStorage.getItem(mk("punchOut")) || "--:--";
+      const workHours = localStorage.getItem(mk("workHours")) || "00:00:00";
       const statusClass = getStatusClass(dateKey);
       const statusText = getStatusText(statusClass);
       const minutes = parseTimeToMinutes(workHours);
@@ -916,17 +1011,23 @@
     const token = localStorage.getItem(tokenKey);
     if (!token) return;
     
+    const getUserId = () => sessionStorage.getItem(userIdKey) || localStorage.getItem(userIdKey) || "";
+    const uid = getUserId();
+    const makeKey = (ns, dateKey) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    const lsSet = (ns, dateKey, val) => {
+      try { localStorage.setItem(makeKey(ns, dateKey), val); } catch (e) {}
+    };
     const att = await apiFetch("/attendance/history", { method: "GET" });
     if (att && Array.isArray(att)) {
       att.forEach(a => {
         try {
           const dateKey = a.date;
-          if (a.punchIn) localStorage.setItem(`punchIn_${dateKey}`, a.punchIn);
-          if (a.punchOut) localStorage.setItem(`punchOut_${dateKey}`, a.punchOut);
-          if (a.totalHours) localStorage.setItem(`workHours_${dateKey}`, a.totalHours);
-          if (a.status === "halfday") localStorage.setItem(`halfDay_${dateKey}`, "true");
-          if (a.status === "present" || a.status === "fullday" || a.status === "fullDay") localStorage.setItem(`fullDay_${dateKey}`, "true");
-          if (a.status === "leave") localStorage.setItem(`leave_${dateKey}`, "true");
+          if (a.punchIn) lsSet("punchIn", dateKey, a.punchIn);
+          if (a.punchOut) lsSet("punchOut", dateKey, a.punchOut);
+          if (a.totalHours) lsSet("workHours", dateKey, a.totalHours);
+          if (a.status === "halfday") lsSet("halfDay", dateKey, "true");
+          if (a.status === "present" || a.status === "fullday" || a.status === "fullDay") lsSet("fullDay", dateKey, "true");
+          if (a.status === "leave") lsSet("leave", dateKey, "true");
         } catch (e) {}
       });
     }
@@ -935,8 +1036,8 @@
     if (leaves && Array.isArray(leaves)) {
       leaves.forEach(l => {
         try {
-          localStorage.setItem(`leave_${l.date}`, "true");
-          if (l.reason) localStorage.setItem(`leaveReason_${l.date}`, l.reason);
+          lsSet("leave", l.date, "true");
+          if (l.reason) lsSet("leaveReason", l.date, l.reason);
         } catch (e) {}
       });
     }
@@ -1161,7 +1262,18 @@
       weeklyTd.classList.add("weekly-hours");
       if (weekStart !== null && weekStart <= totalDays) {
         const actualWeekEnd = weekEnd > totalDays ? totalDays : weekEnd;
-        const weeklyMinutes = calculateWeeklyHours(y, m, weekStart, actualWeekEnd);
+        const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+        const uid = getUserId();
+        const makeKey = (ns, dk) => (uid ? `${ns}_${uid}_${dk}` : `${ns}_${dk}`);
+        let totalMinutes = 0;
+        for (let d = weekStart; d <= actualWeekEnd; d++) {
+          if (d > 0 && d <= daysInMonth(y, m)) {
+            const dk = getDateKey(y, m, d);
+            const storedHours = localStorage.getItem(makeKey("workHours", dk));
+            if (storedHours) totalMinutes += parseTimeToMinutes(storedHours);
+          }
+        }
+        const weeklyMinutes = totalMinutes;
         weeklyTd.textContent = formatHoursMinutes(weeklyMinutes);
       } else {
         weeklyTd.textContent = "";
@@ -1339,14 +1451,17 @@
     const punchInTime = formatTimeShort(startTime.getHours(), startTime.getMinutes());
     if (punchInTimeEl) punchInTimeEl.textContent = punchInTime;
     const dateKey = getDateKey();
-    if (!localStorage.getItem(`punchIn_${dateKey}`)) {
-      localStorage.setItem(`punchIn_${dateKey}`, punchInTime);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    if (!localStorage.getItem(mk("punchIn"))) {
+      localStorage.setItem(mk("punchIn"), punchInTime);
     }
     if (!(existingStartTime instanceof Date)) {
-      localStorage.setItem(`punchInTime_${dateKey}`, startTime.toISOString());
+      localStorage.setItem(mk("punchInTime"), startTime.toISOString());
     }
     if (punchOutTimeEl) punchOutTimeEl.textContent = "--:--";
-    localStorage.removeItem(`punchOut_${dateKey}`);
+    localStorage.removeItem(mk("punchOut"));
     timerInterval = setInterval(updateTimer, 1000);
     updateTimer();
     if (punchInBtn) {
@@ -1381,23 +1496,26 @@
     const punchOutTime = formatTimeShort(now.getHours(), now.getMinutes());
     if (punchOutTimeEl) punchOutTimeEl.textContent = punchOutTime;
     const dateKey = getDateKey();
-    localStorage.setItem(`punchOut_${dateKey}`, punchOutTime);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    localStorage.setItem(mk("punchOut"), punchOutTime);
     const timerValue = overrideTimerText || (workTimerEl ? workTimerEl.textContent || "00:00:00" : "00:00:00");
     if (workTimerEl && overrideTimerText) workTimerEl.textContent = overrideTimerText;
     if (workTimerEl) {
-      localStorage.setItem(`workHours_${dateKey}`, timerValue);
+      localStorage.setItem(mk("workHours"), timerValue);
       if (opts.forceHalfDay) {
-        localStorage.setItem(`halfDay_${dateKey}`, "true");
-        localStorage.removeItem(`fullDay_${dateKey}`);
+        localStorage.setItem(mk("halfDay"), "true");
+        localStorage.removeItem(mk("fullDay"));
       } else if (finalHours >= 5 && finalHours < 8) {
-        localStorage.setItem(`halfDay_${dateKey}`, "true");
-        localStorage.removeItem(`fullDay_${dateKey}`);
+        localStorage.setItem(mk("halfDay"), "true");
+        localStorage.removeItem(mk("fullDay"));
       } else if (finalHours >= 8) {
-        localStorage.setItem(`fullDay_${dateKey}`, "true");
-        localStorage.removeItem(`halfDay_${dateKey}`);
+        localStorage.setItem(mk("fullDay"), "true");
+        localStorage.removeItem(mk("halfDay"));
       } else {
-        localStorage.removeItem(`halfDay_${dateKey}`);
-        localStorage.removeItem(`fullDay_${dateKey}`);
+        localStorage.removeItem(mk("halfDay"));
+        localStorage.removeItem(mk("fullDay"));
       }
     }
     updateCircleStatus(finalHours);
@@ -1467,9 +1585,12 @@
 
   const loadSavedData = () => {
     const dateKey = getDateKey();
-    const savedPunchIn = localStorage.getItem(`punchIn_${dateKey}`);
-    const savedPunchOut = localStorage.getItem(`punchOut_${dateKey}`);
-    const savedWorkHours = localStorage.getItem(`workHours_${dateKey}`);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    const savedPunchIn = localStorage.getItem(mk("punchIn"));
+    const savedPunchOut = localStorage.getItem(mk("punchOut"));
+    const savedWorkHours = localStorage.getItem(mk("workHours"));
     if (savedPunchIn && punchInTimeEl) punchInTimeEl.textContent = savedPunchIn;
     if (savedPunchOut && punchOutTimeEl) punchOutTimeEl.textContent = savedPunchOut;
     if (savedPunchOut && savedWorkHours && workTimerEl) {
@@ -1483,7 +1604,7 @@
         updateProgress(totalHours);
       }
     }
-    const savedStartTime = localStorage.getItem(`punchInTime_${dateKey}`);
+    const savedStartTime = localStorage.getItem(mk("punchInTime"));
     if (savedStartTime && !savedPunchOut) {
       const resumeStart = new Date(savedStartTime);
       if (!isNaN(resumeStart)) {
@@ -1515,10 +1636,13 @@
   };
 
   if (punchInBtn) {
-    punchInBtn.addEventListener("click", () => {
+    punchInBtn.addEventListener("click", async () => {
       const dateKey = getDateKey();
-      const alreadyPunchedIn = !!localStorage.getItem(`punchInTime_${dateKey}`);
-      const alreadyPunchedOut = !!localStorage.getItem(`punchOut_${dateKey}`);
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      const alreadyPunchedIn = !!localStorage.getItem(mk("punchInTime"));
+      const alreadyPunchedOut = !!localStorage.getItem(mk("punchOut"));
       if (alreadyPunchedIn && !alreadyPunchedOut) {
         alert("You are already punched in.");
         return;
@@ -1527,15 +1651,10 @@
         alert("Today's punch out already recorded.");
         return;
       }
-      
-      localStorage.setItem(`punchInTime_${dateKey}`, new Date().toISOString());
-      
-      startTimer();
-      
       try {
         const now = new Date();
         const time = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
-        fetch("http://localhost:5000/attendance/punchin", {
+        const res = await fetch("http://localhost:5000/attendance/punchin", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1546,19 +1665,36 @@
             time,
             timeIso: now.toISOString()
           })
-        }).catch(()=>{});
-      } catch (e){}
+        });
+        if (res.ok) {
+          localStorage.setItem(mk("punchInTime"), new Date().toISOString());
+          startTimer();
+          if (typeof window.triggerAutoRefresh === "function") window.triggerAutoRefresh();
+        } else {
+          let msg = "";
+          try {
+            const data = await res.json();
+            msg = data && data.error ? data.error : "";
+          } catch (e) {}
+          alert(msg || "Punch-in failed");
+        }
+      } catch (e) {
+        alert("Network error");
+      }
     });
   }
 
   if (punchOutBtn) {
     punchOutBtn.addEventListener("click", () => {
       const dateKey = getDateKey();
-      if (localStorage.getItem(`punchOut_${dateKey}`)) {
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      if (localStorage.getItem(mk("punchOut"))) {
         alert("You have already punched out today.");
         return;
       }
-      localStorage.removeItem(`punchInTime_${dateKey}`);
+      localStorage.removeItem(mk("punchInTime"));
       
       try {
         const now = new Date();
@@ -1575,7 +1711,9 @@
             time,
             totalHours
           })
-        }).catch(()=>{});
+        }).catch(()=>{}).finally(()=>{
+          if (typeof window.triggerAutoRefresh === "function") window.triggerAutoRefresh();
+        });
       } catch(e){}
       stopTimer();
     });
@@ -1584,8 +1722,12 @@
   if (halfDayBtn) {
     halfDayBtn.addEventListener("click", () => {
       const dateKey = getDateKey();
-      localStorage.removeItem(`punchInTime_${dateKey}`);
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      localStorage.removeItem(mk("punchInTime"));
       handleHalfDay();
+      if (typeof window.triggerAutoRefresh === "function") window.triggerAutoRefresh();
     });
   }
 
@@ -1636,11 +1778,14 @@
   };
   const getDayName = date => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
   const getStatusClass = dateKey => {
-    const halfDay = localStorage.getItem(`halfDay_${dateKey}`);
-    const fullDay = localStorage.getItem(`fullDay_${dateKey}`);
-    const leaveData = localStorage.getItem(`leave_${dateKey}`);
-    const punchIn = localStorage.getItem(`punchIn_${dateKey}`);
-    const punchOut = localStorage.getItem(`punchOut_${dateKey}`);
+    const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const uid = getUserId();
+    const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+    const halfDay = localStorage.getItem(mk("halfDay"));
+    const fullDay = localStorage.getItem(mk("fullDay"));
+    const leaveData = localStorage.getItem(mk("leave"));
+    const punchIn = localStorage.getItem(mk("punchIn"));
+    const punchOut = localStorage.getItem(mk("punchOut"));
     if (leaveData) return "leave";
     if (halfDay) return "halfday";
     if (fullDay) return "present";
@@ -1669,7 +1814,7 @@
     return "present";
   };
   const getStatusText = statusClass => {
-    const statusMap = { present: "✓", halfday: "½", leave: "L", absent: "✕", missedout: "✕" };
+    const statusMap = { present: "E", halfday: "½", leave: "L", absent: "✕", missedout: "✕" };
     return statusMap[statusClass] || "";
   };
   const render = startDayOffset => {
@@ -1679,9 +1824,12 @@
       date.setDate(date.getDate() - (startDayOffset - i));
       date.setHours(0, 0, 0, 0);
       const dateKey = getDateKey(date);
-      const punchIn = localStorage.getItem(`punchIn_${dateKey}`) || "--:--";
-      const punchOut = localStorage.getItem(`punchOut_${dateKey}`) || "--:--";
-      const workHours = localStorage.getItem(`workHours_${dateKey}`) || "00:00:00";
+      const getUserId = () => sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+      const uid = getUserId();
+      const mk = (ns) => (uid ? `${ns}_${uid}_${dateKey}` : `${ns}_${dateKey}`);
+      const punchIn = localStorage.getItem(mk("punchIn")) || "--:--";
+      const punchOut = localStorage.getItem(mk("punchOut")) || "--:--";
+      const workHours = localStorage.getItem(mk("workHours")) || "00:00:00";
       const statusClass = getStatusClass(dateKey);
       const statusText = getStatusText(statusClass);
       const minutes = parseTimeToMinutes(workHours);
@@ -1795,7 +1943,7 @@
 
     const getLoggedInEmp = () => {
       try {
-        const raw = localStorage.getItem("loggedInEmp");
+        const raw = sessionStorage.getItem("loggedInEmp");
         return raw ? JSON.parse(raw) : null;
       } catch (e) {
         return null;
@@ -1836,10 +1984,18 @@
       logoutLink.addEventListener("click", (e) => {
         e.preventDefault();
         try {
+          sessionStorage.removeItem("loggedInEmp");
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("userId");
+          sessionStorage.removeItem("userName");
+          sessionStorage.removeItem("userRole");
+          sessionStorage.removeItem("userDepartment");
           localStorage.removeItem("loggedInEmp");
           localStorage.removeItem("token");
           localStorage.removeItem("userId");
           localStorage.removeItem("userName");
+          localStorage.removeItem("userRole");
+          localStorage.removeItem("userDepartment");
         } catch (e) {}
         window.location.href = "login.html";
       });
@@ -1922,18 +2078,50 @@
         }
 
         
-        const updated = { name: current.name, pass: newPass, ts: Date.now() };
-        if (current.photoUrl) updated.photoUrl = current.photoUrl;
-        try {
-          localStorage.setItem("loggedInEmp", JSON.stringify(updated));
-        } catch (e) {}
-        if (profileMsg) {
-          profileMsg.classList.add("success");
-          profileMsg.textContent = "Password updated successfully.";
-        }
-        setTimeout(() => {
-          closeProfileModal();
-        }, 1500);
+        const token = sessionStorage.getItem("token");
+        fetch("http://localhost:5000/auth/change-password", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "auth-token": token },
+          body: JSON.stringify({ currentPassword: currPass, newPassword: newPass })
+        })
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(out => {
+          if (out.ok) {
+            if (profileMsg) {
+              profileMsg.classList.add("success");
+              profileMsg.textContent = "Password updated. Please login again.";
+            }
+            setTimeout(() => {
+              try {
+                sessionStorage.removeItem("loggedInEmp");
+                sessionStorage.removeItem("token");
+                sessionStorage.removeItem("userId");
+                sessionStorage.removeItem("userName");
+                sessionStorage.removeItem("userRole");
+                sessionStorage.removeItem("userDepartment");
+                localStorage.removeItem("loggedInEmp");
+                localStorage.removeItem("token");
+                localStorage.removeItem("userId");
+                localStorage.removeItem("userName");
+                localStorage.removeItem("userRole");
+                localStorage.removeItem("userDepartment");
+              } catch (e) {}
+              closeProfileModal();
+              window.location.href = "login.html";
+            }, 800);
+          } else {
+            if (profileMsg) {
+              profileMsg.classList.add("error");
+              profileMsg.textContent = out.data && out.data.error ? out.data.error : "Failed to update password.";
+            }
+          }
+        })
+        .catch(() => {
+          if (profileMsg) {
+            profileMsg.classList.add("error");
+            profileMsg.textContent = "Connection error.";
+          }
+        });
       });
     }
   };
@@ -1975,11 +2163,11 @@
         });
         const data = await res.json();
         if (data && data.token) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("userId", data.id || data.userId || "");
-          localStorage.setItem("userName", data.name || data.userName || name);
+          sessionStorage.setItem("token", data.token);
+          sessionStorage.setItem("userId", data.id || data.userId || "");
+          sessionStorage.setItem("userName", data.name || data.userName || name);
           
-          localStorage.setItem("loggedInEmp", JSON.stringify({ name: data.name || name, pass }));
+          sessionStorage.setItem("loggedInEmp", JSON.stringify({ name: data.name || name, pass }));
           window.location.href = "dashboard.html";
           return;
         } else if (data && data.error) {
@@ -2035,7 +2223,8 @@
 
   const getLeaveStats = () => {
     let totalLeaves = 0;
-    const leavePrefix = "leave_";
+    const uid = sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+    const leavePrefix = uid ? `leave_${uid}_` : "leave_";
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith(leavePrefix)) {
@@ -2092,7 +2281,6 @@
         return;
       }
 
-      let serverOk = false;
       try {
         const res = await fetch("http://localhost:5000/leave/apply", {
           method: "POST",
@@ -2102,26 +2290,42 @@
           },
           body: JSON.stringify({ date: dateValue, reason: reasonValue })
         });
-        if (res.ok) serverOk = true;
+        if (res.ok) {
+          try {
+            const uid = sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+            const makeKey = (ns) => (uid ? `${ns}_${uid}_${dateValue}` : `${ns}_${dateValue}`);
+            localStorage.setItem(makeKey("leave"), "true");
+            localStorage.setItem(makeKey("leaveReason"), reasonValue);
+          } catch (e) {}
+          updateLeaveStats();
+          closeLeaveModal();
+          alert("Leave applied successfully (server).");
+        } else {
+          let msg = "";
+          try {
+            const data = await res.json();
+            msg = data && data.error ? data.error : "";
+          } catch (e) {}
+          alert(msg || "Leave application failed");
+        }
       } catch (e) {
-        console.warn("Leave API failed, falling back to localStorage", e);
+        try {
+          const uid = sessionStorage.getItem("userId") || localStorage.getItem("userId") || "";
+          const makeKey = (ns) => (uid ? `${ns}_${uid}_${dateValue}` : `${ns}_${dateValue}`);
+          localStorage.setItem(makeKey("leave"), "true");
+          localStorage.setItem(makeKey("leaveReason"), reasonValue);
+        } catch (e2) {}
+        updateLeaveStats();
+        closeLeaveModal();
+        alert("Leave applied locally (offline).");
       }
-
-      try {
-        localStorage.setItem(`leave_${dateValue}`, "true");
-        localStorage.setItem(`leaveReason_${dateValue}`, reasonValue);
-      } catch (e) {}
-
-      updateLeaveStats();
-      closeLeaveModal();
-      if (serverOk) alert("Leave applied successfully (server).");
-      else alert("Leave applied locally (offline).");
 
       if (typeof window.updateCalendar === "function") {
         setTimeout(() => {
           window.updateCalendar();
         }, 100);
       }
+      if (typeof window.triggerAutoRefresh === "function") window.triggerAutoRefresh();
     });
   }
 
@@ -2236,12 +2440,12 @@
     const mainSection = document.querySelector('.side-menu-section:not(.admin-only)');
 
     employeeLinks.forEach(link => {
-      const show = userRole === 'employee' || userRole === 'manager' || userRole === 'supervisor';
+      const show = userRole === 'employee' || userRole === 'manager' || userRole === 'supervisor' || userRole === 'hr';
       link.style.display = show ? 'flex' : 'none';
     });
 
     hrLinks.forEach(link => {
-      const show = userRole === 'hr' || userRole === 'admin';
+      const show = userRole === 'hr';
       link.style.display = show ? 'flex' : 'none';
     });
 

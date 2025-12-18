@@ -1,11 +1,17 @@
 const router = require("express").Router();
 const auth = require("../middleware/auth");
 const Attendance = require("../models/Attendance");
+const Leave = require("../models/Leave");
 
 router.post("/punchin", auth, async (req, res) => {
   try {
     const { date, time, timeIso } = req.body;
     if (!date || !time) return res.status(400).json({ error: "date and time required" });
+
+    const approvedLeave = await Leave.findOne({ userId: req.user.id, date, status: "approved" });
+    if (approvedLeave) {
+      return res.status(400).json({ error: "Punch-in blocked due to approved leave" });
+    }
 
     await Attendance.findOneAndUpdate(
       { userId: req.user.id, date },
@@ -32,7 +38,7 @@ router.post("/punchout", auth, async (req, res) => {
       if (hh >= 9) status = "overtime";
       else if (hh >= 8) status = "present";
       else if (hh >= 5) status = "halfday";
-      else status = "present";
+      else status = "early";
     }
 
     await Attendance.findOneAndUpdate(

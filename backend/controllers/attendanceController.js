@@ -11,7 +11,7 @@ const secondsToHMS = secs => {
 
 const computeStatus = totalHours => {
   if (totalHours === 0) return 'pending'
-  if (totalHours < 5) return 'pending'
+  if (totalHours < 5) return 'early'
   if (totalHours >= 5 && totalHours < 8) return 'halfday'
   if (totalHours >= 8 && totalHours < 9) return 'present'
   if (totalHours >= 9 && totalHours < 24) return 'overtime'

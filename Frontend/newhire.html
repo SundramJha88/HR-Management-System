@@ -59,10 +59,59 @@
     .submit-btn:hover {
       background: #0056b3;
     }
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: flex-start;
+    }
+    .page-header img {
+      height: 50px;
+      width: auto;
+    }
+    .page-header h1 {
+      margin: 0;
+    }
+    .dashboard {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 1200px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding-bottom: 10px;
+    }
+    .newhire-form input, .newhire-form select {
+      min-height: 36px;
+    }
+    .nh-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 20px;
+      margin: 10px 0 0;
+      align-items: end;
+    }
+    .nh-header label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .nh-id-box {
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      min-height: 36px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+    }
   </style>
 </head>
 <script>
-  if (!localStorage.getItem("loggedInEmp")) {
+  if (!sessionStorage.getItem("loggedInEmp")) {
     window.location.href = "login.html";
   }
 </script>
@@ -81,22 +130,85 @@
 
   <div class="dashboard">
     <section class="card" style="max-width:1300px; margin:0 auto;">
-      <h3>New Hire Information Form</h3>
+      <div class="page-header" style="margin:10px 0;">
+        <img src="office logo.png" alt="VAAU Logo">
+        <h1>New Hire Information Form</h1>
+      </div>
 
       <form id="newHireForm" class="newhire-form">
-        <table>
-          <tr>
-            <td style="font-weight:bold; width:30%;">VAAU TechnoSoft Pvt Ltd</td>
-            <td style="text-align:center; font-size:18px; font-weight:bold;">New Hire Information Form</td>
-            <td style="text-align:center; font-weight:bold;">VAAU ID</td>
-          </tr>
-        </table>
+        <div class="nh-header">
+          <div>
+            <label>VAAU ID</label>
+            <div class="nh-id-box"><span id="vaauIdDisplay"></span></div>
+          </div>
+          <div>
+            <label>Designation</label>
+            <select name="designation">
+              <option value="">Select Designation</option>
+              <option value="Intern">Intern</option>
+              <option value="Junior">Junior</option>
+              <option value="Senior">Senior</option>
+              <option value="Lead">Lead</option>
+              <option value="Manager">Manager</option>
+              <option value="HR">HR</option>
+            </select>
+          </div>
+          <div>
+            <label>Grade</label>
+            <select name="grade">
+              <option value="">Select Grade</option>
+              <option value="G1">G1</option>
+              <option value="G2">G2</option>
+              <option value="G3">G3</option>
+              <option value="G4">G4</option>
+              <option value="G5">G5</option>
+            </select>
+          </div>
+          <div>
+            <label>Department</label>
+            <select name="department">
+              <option value="">Select Department</option>
+              <option value="IT">IT</option>
+              <option value="HR">HR</option>
+              <!-- <option value="Operations">Operations</option>
+              <option value="Finance">Finance</option>
+              <option value="Sales">Sales</option>
+              <option value="Marketing">Marketing</option> -->
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Account Details</h4>
+          <div class="form-row">
+            <div>
+              <label>Role *</label>
+              <select name="role" required>
+                <option value="employee">Employee</option>
+                <option value="hr">HR</option>
+              </select>
+            </div>
+            <div>
+              <label>Email *</label>
+              <input name="email" type="email" placeholder="Enter Email ID" required/>
+            </div>
+            <div>
+              <label>Mobile</label>
+              <input name="mobile" placeholder="Enter Mobile Number" />
+            </div>
+            <div>
+              <label>Password</label>
+              <input name="password" type="password" placeholder="Enter Password" />
+            </div>
+          </div>
+        </div>
 
         <div class="form-section">
           <h4>Personal Information</h4>
           <table>
             <tr>
-              <td style="width:25%;"><label>Title *</label><input name="title" required/></td>
+              <td style="width:25%;"><label>Title *</label><select name="title" required><option value="">Select</option><option value="Mr">Mr</option><option value="Ms">Ms</option><option value="Miss">Miss</option><option value="Mrs">Mrs</option><option value="Dr">Dr</option></select></td>
               <td style="width:25%;"><label>First Name *</label><input name="firstName" required/></td>
               <td style="width:25%;"><label>Last Name *</label><input name="lastName" required/></td>
               <td style="width:25%;"><label>Known As *</label><input name="knownAs" required/></td>
@@ -108,15 +220,80 @@
               <td><label>Country of Work *</label><input name="workCountry" required/></td>
             </tr>
             <tr>
-              <td><label>Gender *</label><input name="gender" required/></td>
-              <td><label>Marital Status *</label><input name="maritalStatus" required/></td>
+              <td><label>Gender *</label><select name="gender" required><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select></td>
+              <td><label>Marital Status *</label><select name="maritalStatus" required><option value="">Select</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option></select></td>
               <td><label>PAN No *</label><input name="pan" required/></td>
-              <td></td>
+              <td><label>Passport No</label><input name="passportNo" placeholder="optional"/></td>
             </tr>
             <tr>
-              <td colspan="4"><label>Father's Name *</label><input name="fatherName" required/></td>
+              <td colspan="2"><label>Father's Name *</label><input name="fatherName" required/></td>
+              <td colspan="2"><label>Mother's Name *</label><input name="motherName" required/></td>
             </tr>
           </table>
+        </div>
+
+        <div class="form-section">
+          <h4>Permanent Address</h4>
+          <div class="form-row">
+            <div>
+              <label>Address Line 1 *</label>
+              <input name="permAddress1" required/>
+            </div>
+            <div>
+              <label>Address Line 2</label>
+              <input name="permAddress2"/>
+            </div>
+            <div>
+              <label>Address Line 3</label>
+              <input name="permAddress3"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Pincode *</label>
+              <input name="permPincode" required/>
+            </div>
+            <div>
+              <label>State *</label>
+              <input name="permState" required/>
+            </div>
+            <div>
+              <label>Country *</label>
+              <input name="permCountry" required/>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Corresponding Address</h4>
+          <div class="form-row">
+            <div>
+              <label>Address Line 1 *</label>
+              <input name="corrAddress1" required/>
+            </div>
+            <div>
+              <label>Address Line 2</label>
+              <input name="corrAddress2"/>
+            </div>
+            <div>
+              <label>Address Line 3</label>
+              <input name="corrAddress3"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Pincode *</label>
+              <input name="corrPincode" required/>
+            </div>
+            <div>
+              <label>State *</label>
+              <input name="corrState" required/>
+            </div>
+            <div>
+              <label>Country *</label>
+              <input name="corrCountry" required/>
+            </div>
+          </div>
         </div>
 
         <div class="form-section">
@@ -133,14 +310,14 @@
               <th>End Date *</th>
             </tr>
             <tr>
-              <td><input name="edu1_est"/></td>
-              <td><input name="edu1_inst"/></td>
-              <td><input name="edu1_ctry"/></td>
-              <td><input name="edu1_cert"/></td>
-              <td><input name="edu1_branch"/></td>
-              <td><input name="edu1_score"/></td>
-              <td><input type="date" name="edu1_start"/></td>
-              <td><input type="date" name="edu1_end"/></td>
+              <td><input name="edu1_est" required/></td>
+              <td><input name="edu1_inst" required/></td>
+              <td><input name="edu1_ctry" required/></td>
+              <td><input name="edu1_cert" required/></td>
+              <td><input name="edu1_branch" required/></td>
+              <td><input name="edu1_score" required/></td>
+              <td><input type="date" name="edu1_start" required/></td>
+              <td><input type="date" name="edu1_end" required/></td>
             </tr>
             <tr>
               <td><input name="edu2_est"/></td>
@@ -195,7 +372,7 @@
               <td><input type="date" name="exp2_start"/></td>
               <td><input type="date" name="exp2_end"/></td>
             </tr>
-            <tr>
+            <!-- <tr>
               <td><input name="exp3_org"/></td>
               <td><input name="exp3_des"/></td>
               <td><input name="exp3_ind"/></td>
@@ -203,7 +380,7 @@
               <td><input name="exp3_ctry"/></td>
               <td><input type="date" name="exp3_start"/></td>
               <td><input type="date" name="exp3_end"/></td>
-            </tr>
+            </tr> -->
           </table>
         </div>
 
@@ -237,7 +414,7 @@
         </div>
 
         <div style="text-align:center;">
-          <button class="submit-btn" type="submit">Submit Form</button>
+          <button id="submitBtn" class="submit-btn" type="submit">Submit Form</button>
         </div>
       </form>
     </section>
@@ -251,27 +428,161 @@
       let data = Object.fromEntries(formData.entries());
 
       try {
-        let res = await fetch("http://localhost:5000/newhire/submit", {
-          method:"POST",
+        const params = new URLSearchParams(window.location.search);
+        const empId = params.get('employeeId') || '';
+        const url = empId ? `http://localhost:5000/newhire/by-employee/${empId}` : "http://localhost:5000/newhire/submit";
+        const method = empId ? "PUT" : "POST";
+        let res = await fetch(url, {
+          method: method,
           headers:{
             "Content-Type":"application/json",
-            "auth-token": localStorage.getItem("token")
+            "auth-token": sessionStorage.getItem("token")
           },
           body:JSON.stringify(data)
         });
 
         let out = await res.json();
         if(res.ok) {
-          alert(out.message || "New Hire form submitted successfully");
+          const msg = out.message || (empId ? "New Hire updated successfully" : "New Hire form submitted successfully");
+          const pw = out.initialPassword ? ` Temporary Password: ${out.initialPassword}` : "";
+          alert(msg + pw);
           document.getElementById("newHireForm").reset();
         } else {
-          alert(out.message || "Error submitting form");
+          alert(out.error || out.message || "Error submitting form");
         }
       } catch(e) {
         console.error("Error:", e);
         alert("Failed to submit form. Please try again.");
       }
     });
+  </script>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const empId = params.get('employeeId') || '';
+    async function preload() {
+      if (!empId) return;
+      try {
+        const res = await fetch(`http://localhost:5000/newhire/by-employee/${empId}`, {
+          headers: { "auth-token": sessionStorage.getItem("token") }
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+        const f = document.getElementById("newHireForm");
+        const set = (n,v) => { const el = f.querySelector(`[name="${n}"]`); if (el) el.value = v || ""; };
+        const idEl = document.getElementById('vaauIdDisplay');
+        if (idEl) idEl.textContent = empId || data.employeeId || "";
+        const btn = document.getElementById('submitBtn');
+        if (btn) btn.textContent = "Update";
+        set("role", data.role);
+        set("email", data.email);
+        set("mobile", data.mobile);
+        set("department", data.department);
+        set("designation", data.designation);
+        set("grade", data.grade);
+        set("title", data.title);
+        set("firstName", data.firstName);
+        set("lastName", data.lastName);
+        set("knownAs", data.knownAs);
+        set("dob", data.dob);
+        set("age", data.age);
+        set("nationality", data.nationality);
+        set("workCountry", data.workCountry);
+        set("gender", data.gender);
+        set("maritalStatus", data.maritalStatus);
+        set("pan", data.pan);
+        set("passportNo", data.passportNo);
+        set("fatherName", data.fatherName);
+        set("motherName", data.motherName);
+        set("permAddress1", data.permAddress1);
+        set("permAddress2", data.permAddress2);
+        set("permAddress3", data.permAddress3);
+        set("permPincode", data.permPincode);
+        set("permState", data.permState);
+        set("permCountry", data.permCountry);
+        set("corrAddress1", data.corrAddress1);
+        set("corrAddress2", data.corrAddress2);
+        set("corrAddress3", data.corrAddress3);
+        set("corrPincode", data.corrPincode);
+        set("corrState", data.corrState);
+        set("corrCountry", data.corrCountry);
+        set("edu1_est", data.edu1_est);
+        set("edu1_inst", data.edu1_inst);
+        set("edu1_ctry", data.edu1_ctry);
+        set("edu1_cert", data.edu1_cert);
+        set("edu1_branch", data.edu1_branch);
+        set("edu1_score", data.edu1_score);
+        set("edu1_start", data.edu1_start);
+        set("edu1_end", data.edu1_end);
+        set("edu2_est", data.edu2_est);
+        set("edu2_inst", data.edu2_inst);
+        set("edu2_ctry", data.edu2_ctry);
+        set("edu2_cert", data.edu2_cert);
+        set("edu2_branch", data.edu2_branch);
+        set("edu2_score", data.edu2_score);
+        set("edu2_start", data.edu2_start);
+        set("edu2_end", data.edu2_end);
+        set("edu3_est", data.edu3_est);
+        set("edu3_inst", data.edu3_inst);
+        set("edu3_ctry", data.edu3_ctry);
+        set("edu3_cert", data.edu3_cert);
+        set("edu3_branch", data.edu3_branch);
+        set("edu3_score", data.edu3_score);
+        set("edu3_start", data.edu3_start);
+        set("edu3_end", data.edu3_end);
+        set("exp1_org", data.exp1_org);
+        set("exp1_des", data.exp1_des);
+        set("exp1_ind", data.exp1_ind);
+        set("exp1_city", data.exp1_city);
+        set("exp1_ctry", data.exp1_ctry);
+        set("exp1_start", data.exp1_start);
+        set("exp1_end", data.exp1_end);
+        set("exp2_org", data.exp2_org);
+        set("exp2_des", data.exp2_des);
+        set("exp2_ind", data.exp2_ind);
+        set("exp2_city", data.exp2_city);
+        set("exp2_ctry", data.exp2_ctry);
+        set("exp2_start", data.exp2_start);
+        set("exp2_end", data.exp2_end);
+        set("exp3_org", data.exp3_org);
+        set("exp3_des", data.exp3_des);
+        set("exp3_ind", data.exp3_ind);
+        set("exp3_city", data.exp3_city);
+        set("exp3_ctry", data.exp3_ctry);
+        set("exp3_start", data.exp3_start);
+        set("exp3_end", data.exp3_end);
+        set("decName", data.decName);
+        set("decSign", data.decSign);
+        set("decDate", data.decDate);
+      } catch (e) {}
+    }
+    preload();
+  </script>
+
+  <script>
+    (function(){
+      const dobEl = document.querySelector('input[name="dob"]');
+      const ageEl = document.querySelector('input[name="age"]');
+      function calcAge(d){
+        if(!d) return "";
+        const dt = new Date(d);
+        if(isNaN(dt)) return "";
+        const today = new Date();
+        let age = today.getFullYear() - dt.getFullYear();
+        const m = today.getMonth() - dt.getMonth();
+        if(m < 0 || (m === 0 && today.getDate() < dt.getDate())) age--;
+        return String(age);
+      }
+      function updateAge(){
+        if(!dobEl || !ageEl) return;
+        ageEl.value = calcAge(dobEl.value);
+      }
+      if(dobEl){
+        dobEl.addEventListener('change', updateAge);
+        dobEl.addEventListener('input', updateAge);
+      }
+      window.addEventListener('load', updateAge);
+    })();
   </script>
 
   <script src="script.js"></script>

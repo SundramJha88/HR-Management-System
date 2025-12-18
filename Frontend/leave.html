@@ -7,13 +7,12 @@
   <link rel="stylesheet" href="style.css"/>
 </head>
 <script>
-  if (!localStorage.getItem("loggedInEmp")) {
+  if (!sessionStorage.getItem("loggedInEmp")) {
     window.location.href = "login.html";
   }
 
-  // Validate session on page load
   async function validateAndRedirect() {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (!token) {
       window.location.href = "login.html";
       return;
@@ -27,12 +26,12 @@
         }
       });
       if (!res.ok) {
-        localStorage.clear();
+        sessionStorage.clear();
         window.location.href = "login.html";
       }
     } catch (e) {
       console.error("Validation error:", e);
-      localStorage.clear();
+      sessionStorage.clear();
       window.location.href = "login.html";
     }
   }
