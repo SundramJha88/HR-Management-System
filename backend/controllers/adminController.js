@@ -112,7 +112,10 @@ exports.getAttendanceReport = async (req, res) => {
     const rows = users.map(u => {
       const a = attMap.get(String(u._id));
       const statusRaw = a ? String(a.status || '').toLowerCase() : 'absent';
-      const status = statusRaw === 'early' ? 'Early punchout' : statusRaw || 'absent';
+      let status = statusRaw === 'early' ? 'Early punchout' : statusRaw || 'absent';
+      if (String(u.role || '').toLowerCase() === 'admin') {
+        status = 'present';
+      }
       return {
         userId: {
           name: u.name,
@@ -133,7 +136,7 @@ exports.getAttendanceReport = async (req, res) => {
 
 exports.getLeaveReport = async (req, res) => {
   try {
-    const leaves = await Leave.find({})
+    const leaves = await Leave.find({ status: { $in: ["approved","rejected"] } })
       .populate("userId", "name email role department employeeId")
       .sort({ date: -1 })
       .limit(500);

@@ -12,12 +12,6 @@ exports.applyLeave = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    await Attendance.findOneAndUpdate(
-      { userId: req.user.id, date },
-      { userId: req.user.id, date, status: "leave" },
-      { upsert: true }
-    );
-
     res.json({ message: "Leave applied", leave });
   } catch (err) {
     console.error(err);

@@ -15,7 +15,7 @@ router.post("/punchin", auth, async (req, res) => {
 
     await Attendance.findOneAndUpdate(
       { userId: req.user.id, date },
-      { userId: req.user.id, date, punchIn: time, punchInIso: timeIso || new Date().toISOString() },
+      { userId: req.user.id, date, punchIn: time, punchInIso: timeIso || new Date().toISOString(), status: "present" },
       { upsert: true, new: true }
     );
     return res.json({ message: "Punch In Recorded" });

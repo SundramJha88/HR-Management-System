@@ -80,4 +80,36 @@ router.post("/:id/reject", auth, checkRole(["hr","admin"]), async (req, res) => 
   }
 });
 
+router.put("/:id/status", auth, checkRole(["hr","admin"]), async (req, res) => {
+  try {
+    const { status } = req.body;
+    const next = String(status || '').toLowerCase();
+    if (!['approved','rejected'].includes(next)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) return res.status(404).json({ error: "Leave not found" });
+    const prev = String(leave.status || '').toLowerCase();
+    leave.status = next;
+    await leave.save();
+    if (next === 'approved') {
+      await Attendance.findOneAndUpdate(
+        { userId: leave.userId, date: leave.date },
+        { userId: leave.userId, date: leave.date, status: "leave" },
+        { upsert: true }
+      );
+    } else if (prev === 'approved' && next === 'rejected') {
+      const att = await Attendance.findOne({ userId: leave.userId, date: leave.date });
+      if (att && String(att.status).toLowerCase() === 'leave') {
+        att.status = 'absent';
+        await att.save();
+      }
+    }
+    return res.json({ message: "Updated", leave });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;

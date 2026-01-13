@@ -3,8 +3,8 @@ const auth = require("../middleware/auth");
 const checkRole = require("../middleware/roleCheck");
 const adminController = require("../controllers/adminController");
 
-router.get("/users", auth, checkRole(["admin"]), adminController.getAllUsers);
-router.get("/users/:id", auth, checkRole(["admin"]), adminController.getUserById);
+router.get("/users", auth, checkRole(["admin","hr"]), adminController.getAllUsers);
+router.get("/users/:id", auth, checkRole(["admin","hr"]), adminController.getUserById);
 router.put("/users/:id", auth, checkRole(["admin"]), adminController.updateUser);
 router.put("/users/:id/status", auth, checkRole(["admin"]), adminController.updateUserStatus);
 router.delete("/users/:id", auth, checkRole(["admin"]), adminController.deleteUser);

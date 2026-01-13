@@ -80,13 +80,15 @@
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">No users found</td></tr>';
         return;
       }
+      const viewerRole = (localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || '').toLowerCase();
+      const canToggle = viewerRole === 'admin';
       tbody.innerHTML = users.map(u => {
         const role = String(u.role || '').toLowerCase();
         const idCell = u.employeeId || '';
         const statusCell = u.active === false ? '<span class="badge">Inactive</span>' : '<span class="badge success">Active</span>';
         const isAdmin = role === 'admin';
         const btnText = u.active === false ? 'Activate' : 'Deactivate';
-        const disabledAttr = isAdmin ? 'disabled' : '';
+        const disabledAttr = (!canToggle || isAdmin) ? 'disabled' : '';
         return `
           <tr data-id="${u._id}">
             <td>${u.name}</td>

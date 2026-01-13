@@ -17,7 +17,8 @@
 
     <div class="report-tabs">
       <button class="tab-btn active" onclick="switchTab('attendance')">Attendance Report</button>
-      <button class="tab-btn" onclick="switchTab('leave')">Leave Report</button>
+      <button class="tab-btn" onclick="switchTab('leave')">Leave</button>
+      
     </div>
 
     <div id="attendanceTab" class="tab-content active">
@@ -41,7 +42,26 @@
     </div>
 
     <div id="leaveTab" class="tab-content">
-      <h3>Leave Report</h3>
+      <h3>Pending Leave Requests</h3>
+      <div class="users-table-wrapper">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Email</th>
+              <th>Employee ID</th>
+              <th>Date</th>
+              <th>Reason</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pendingLeaveBody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;">Loading pending leaves...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:20px;">Leave Report</h3>
       <div class="users-table-wrapper">
         <table class="users-table">
           <thead>
@@ -52,6 +72,8 @@
               <th>Role</th>
               <th>Date</th>
               <th>Reason</th>
+              <th>Status</th>
+              <th>Edit</th>
             </tr>
           </thead>
           <tbody id="leaveTableBody">
@@ -60,6 +82,7 @@
         </table>
       </div>
     </div>
+    
   </div>
 
   <script src="script.js"></script>
@@ -124,7 +147,7 @@
         const tbody = document.getElementById('leaveTableBody');
         const rows = Array.isArray(data) ? data.filter(r => r && r.userId) : [];
         if (!rows || rows.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">No leave records found</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;">No leave records found</td></tr>';
           return;
         }
         tbody.innerHTML = rows.map(record => {
@@ -134,14 +157,33 @@
           const userRole = record.userId?.role || 'N/A';
           const date = new Date(record.date).toLocaleDateString() || record.date;
           const reason = record.reason || '';
+          const status = String(record.status || '').toLowerCase();
+          const statusBadge = status === 'approved' ? '<span class="badge success">Approved</span>' : '<span class="badge">Rejected</span>';
+          const isPast = (() => {
+            try {
+              const d = new Date(record.date);
+              const today = new Date();
+              d.setHours(0,0,0,0);
+              today.setHours(0,0,0,0);
+              return d < today;
+            } catch(e) { return false; }
+          })();
+          const disabledAttr = isPast ? 'disabled' : '';
+          const editButtons = status === 'approved'
+            ? `<button class="btn small outline edit-status" data-next="rejected" ${disabledAttr}>Reject</button>`
+            : `<button class="btn small outline edit-status" data-next="approved" ${disabledAttr}>Approve</button>`;
           return `
-            <tr>
+            <tr data-id="${record._id}">
               <td>${userName}</td>
               <td>${userEmail}</td>
               <td>${employeeId}</td>
               <td><span class="badge">${userRole}</span></td>
               <td>${date}</td>
               <td>${reason}</td>
+              <td>${statusBadge}</td>
+              <td>
+                ${editButtons}
+              </td>
             </tr>
           `;
         }).join('');
@@ -151,32 +193,39 @@
       }
     };
 
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.edit-status');
+      if (!btn) return;
+      const tr = btn.closest('tr');
+      const id = tr ? tr.getAttribute('data-id') : '';
+      const next = btn.getAttribute('data-next') || '';
+      if (!id || !next) return;
+      try {
+        const token = sessionStorage.getItem('token');
+        const res = await fetch(`http://localhost:5000/leave/${id}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'auth-token': token },
+          body: JSON.stringify({ status: next })
+        });
+        const out = await res.json();
+        if (res.ok) {
+          if (typeof window.triggerAutoRefresh === 'function') window.triggerAutoRefresh();
+          else loadLeaveReport();
+        } else {
+          alert(out.error || 'Failed to update');
+        }
+      } catch (err) {
+        alert('Network error');
+      }
+    });
+
     const loadPendingLeavesForHR = async () => {
       const role = (localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || '').toLowerCase();
-      if (role !== 'hr') return;
-      const container = document.createElement('div');
-      container.style.marginTop = '20px';
-      container.innerHTML = `
-        <h3>Pending Leave Requests</h3>
-        <div class="users-table-wrapper">
-          <table class="users-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Email</th>
-                <th>Employee ID</th>
-                <th>Date</th>
-                <th>Reason</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="pendingLeaveBody">
-              <tr><td colspan="6" style="text-align:center;padding:20px;">Loading pending leaves...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      `;
-      document.getElementById('leaveTab').appendChild(container);
+      if (role !== 'hr' && role !== 'admin') {
+        const tbl = document.getElementById('pendingLeaveBody');
+        if (tbl) tbl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">Visible to HR/Admin only</td></tr>';
+        return;
+      }
       try {
         const token = sessionStorage.getItem('token');
         const res = await fetch('http://localhost:5000/leave/pending', {
@@ -212,6 +261,8 @@
       }
     };
 
+    
+
     document.addEventListener('click', async (e) => {
       const approve = e.target.closest('.approve-btn');
       const reject = e.target.closest('.reject-btn');
@@ -237,6 +288,7 @@
     loadAttendanceReport();
     loadLeaveReport();
     loadPendingLeavesForHR();
+    
   </script>
 </body>
 </html>

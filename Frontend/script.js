@@ -46,7 +46,10 @@
     if (leaves && Array.isArray(leaves)) {
       leaves.forEach(l => {
         try {
-          lsSet("leave", l.date, "true");
+          const key = makeKey("leave", l.date);
+          const st = String(l.status || '').toLowerCase();
+          if (st === 'approved') lsSet("leave", l.date, "true");
+          else try { localStorage.removeItem(key); } catch(e) {}
           if (l.reason) lsSet("leaveReason", l.date, l.reason);
         } catch (e) {}
       });
@@ -739,7 +742,10 @@
         });
         if (res.ok) {
           localStorage.setItem(mk("punchInTime"), new Date().toISOString());
+          try { localStorage.removeItem(mk("leave")); } catch(e) {}
+          try { localStorage.removeItem(mk("leaveReason")); } catch(e) {}
           startTimer();
+          if (typeof window.triggerAutoRefresh === "function") window.triggerAutoRefresh();
         } else {
           let msg = "";
           try {
@@ -852,9 +858,10 @@
     const leaveData = localStorage.getItem(mk("leave"));
     const punchIn = localStorage.getItem(mk("punchIn"));
     const punchOut = localStorage.getItem(mk("punchOut"));
-    if (leaveData) return "leave";
+    if (punchIn && punchOut) return "present";
     if (halfDay) return "halfday";
     if (fullDay) return "present";
+    if (leaveData) return "leave";
     const date = new Date(dateKey);
     const now = new Date();
     if (punchIn && !punchOut) {
@@ -1036,8 +1043,17 @@
     if (leaves && Array.isArray(leaves)) {
       leaves.forEach(l => {
         try {
-          lsSet("leave", l.date, "true");
-          if (l.reason) lsSet("leaveReason", l.date, l.reason);
+          const st = String(l.status || '').toLowerCase();
+          const dateKey = l.date;
+          if (st === 'approved') {
+            lsSet("leave", dateKey, "true");
+          } else {
+            try {
+              const key = makeKey("leave", dateKey);
+              localStorage.removeItem(key);
+            } catch(e) {}
+          }
+          if (l.reason) lsSet("leaveReason", dateKey, l.reason);
         } catch (e) {}
       });
     }
@@ -1668,6 +1684,8 @@
         });
         if (res.ok) {
           localStorage.setItem(mk("punchInTime"), new Date().toISOString());
+          try { localStorage.removeItem(mk("leave")); } catch(e) {}
+          try { localStorage.removeItem(mk("leaveReason")); } catch(e) {}
           startTimer();
           if (typeof window.triggerAutoRefresh === "function") window.triggerAutoRefresh();
         } else {
@@ -2282,6 +2300,15 @@
       }
 
       try {
+        const now = new Date();
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        if (dateValue === todayKey && now.getHours() >= 9) {
+          alert("Same-day leave must be applied before 09:00");
+          return;
+        }
+      } catch(e) {}
+
+      try {
         const res = await fetch("http://localhost:5000/leave/apply", {
           method: "POST",
           headers: {
@@ -2467,10 +2494,28 @@
   if (document.querySelectorAll('.side-menu-link').length > 0) {
     setActiveLink();
     setupRoleBasedMenu();
+    const topLink = document.querySelector('.company-sub');
+    if (topLink) {
+      topLink.style.cursor = 'pointer';
+      topLink.addEventListener('click', () => {
+        const role = (localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || '').toLowerCase();
+        const target = role === 'admin' ? 'admin.html' : 'attendance.html';
+        window.location.href = target;
+      });
+    }
   } else {
     window.addEventListener('layoutLoaded', () => {
       setActiveLink();
       setupRoleBasedMenu();
+      const topLink = document.querySelector('.company-sub');
+      if (topLink) {
+        topLink.style.cursor = 'pointer';
+        topLink.addEventListener('click', () => {
+          const role = (localStorage.getItem('userRole') || sessionStorage.getItem('userRole') || '').toLowerCase();
+          const target = role === 'admin' ? 'admin.html' : 'attendance.html';
+          window.location.href = target;
+        });
+      }
     });
   }
 })();

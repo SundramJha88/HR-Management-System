@@ -108,6 +108,25 @@
       display: flex;
       align-items: center;
     }
+    .btn.small {
+      padding: 2px 8px;
+      font-size: 12px;
+      line-height: 1;
+      border-radius: 6px;
+    }
+    .addr-same {
+      font-weight: normal;
+      margin-left: 0;
+      margin-bottom: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .addr-same input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      transform: scale(0.9);
+    }
   </style>
 </head>
 <script>
@@ -233,38 +252,6 @@
         </div>
 
         <div class="form-section">
-          <h4>Permanent Address</h4>
-          <div class="form-row">
-            <div>
-              <label>Address Line 1 *</label>
-              <input name="permAddress1" required/>
-            </div>
-            <div>
-              <label>Address Line 2</label>
-              <input name="permAddress2"/>
-            </div>
-            <div>
-              <label>Address Line 3</label>
-              <input name="permAddress3"/>
-            </div>
-          </div>
-          <div class="form-row">
-            <div>
-              <label>Pincode *</label>
-              <input name="permPincode" required/>
-            </div>
-            <div>
-              <label>State *</label>
-              <input name="permState" required/>
-            </div>
-            <div>
-              <label>Country *</label>
-              <input name="permCountry" required/>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
           <h4>Corresponding Address</h4>
           <div class="form-row">
             <div>
@@ -297,8 +284,41 @@
         </div>
 
         <div class="form-section">
-          <h4>Education Details</h4>
-          <table>
+          <div class="addr-same"><input type="checkbox" id="permSameAsCorr"> Same as Corresponding</div>
+          <h4>Permanent Address</h4>
+          <div class="form-row">
+            <div>
+              <label>Address Line 1 *</label>
+              <input name="permAddress1" required/>
+            </div>
+            <div>
+              <label>Address Line 2</label>
+              <input name="permAddress2"/>
+            </div>
+            <div>
+              <label>Address Line 3</label>
+              <input name="permAddress3"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Pincode *</label>
+              <input name="permPincode" required/>
+            </div>
+            <div>
+              <label>State *</label>
+              <input name="permState" required/>
+            </div>
+            <div>
+              <label>Country *</label>
+              <input name="permCountry" required/>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Education Details <button type="button" id="eduAddBtn" class="btn small outline" style="margin-left:8px;">+</button></h4>
+          <table id="educationTable">
             <tr>
               <th>Establishment *</th>
               <th>Institute *</th>
@@ -309,42 +329,45 @@
               <th>Start Date *</th>
               <th>End Date *</th>
             </tr>
-            <tr>
-              <td><input name="edu1_est" required/></td>
-              <td><input name="edu1_inst" required/></td>
-              <td><input name="edu1_ctry" required/></td>
-              <td><input name="edu1_cert" required/></td>
-              <td><input name="edu1_branch" required/></td>
-              <td><input name="edu1_score" required/></td>
-              <td><input type="date" name="edu1_start" required/></td>
-              <td><input type="date" name="edu1_end" required/></td>
-            </tr>
-            <tr>
-              <td><input name="edu2_est"/></td>
-              <td><input name="edu2_inst"/></td>
-              <td><input name="edu2_ctry"/></td>
-              <td><input name="edu2_cert"/></td>
-              <td><input name="edu2_branch"/></td>
-              <td><input name="edu2_score"/></td>
-              <td><input type="date" name="edu2_start"/></td>
-              <td><input type="date" name="edu2_end"/></td>
-            </tr>
-            <tr>
-              <td><input name="edu3_est"/></td>
-              <td><input name="edu3_inst"/></td>
-              <td><input name="edu3_ctry"/></td>
-              <td><input name="edu3_cert"/></td>
-              <td><input name="edu3_branch"/></td>
-              <td><input name="edu3_score"/></td>
-              <td><input type="date" name="edu3_start"/></td>
-              <td><input type="date" name="edu3_end"/></td>
-            </tr>
+            <tbody>
+              <tr>
+                <td><input name="edu1_est" required/></td>
+                <td><input name="edu1_inst" required/></td>
+                <td><input name="edu1_ctry" required/></td>
+                <td><input name="edu1_cert" required/></td>
+                <td><input name="edu1_branch" required/></td>
+                <td><input name="edu1_score" required/></td>
+                <td><input type="date" name="edu1_start" required/></td>
+                <td><input type="date" name="edu1_end" required/></td>
+              </tr>
+              <tr>
+                <td><input name="edu2_est"/></td>
+                <td><input name="edu2_inst"/></td>
+                <td><input name="edu2_ctry"/></td>
+                <td><input name="edu2_cert"/></td>
+                <td><input name="edu2_branch"/></td>
+                <td><input name="edu2_score"/></td>
+                <td><input type="date" name="edu2_start"/></td>
+                <td><input type="date" name="edu2_end"/></td>
+              </tr>
+              <tr>
+                <td><input name="edu3_est"/></td>
+                <td><input name="edu3_inst"/></td>
+                <td><input name="edu3_ctry"/></td>
+                <td><input name="edu3_cert"/></td>
+                <td><input name="edu3_branch"/></td>
+                <td><input name="edu3_score"/></td>
+                <td><input type="date" name="edu3_start"/></td>
+                <td><input type="date" name="edu3_end"/></td>
+              </tr>
+            </tbody>
           </table>
+          <div id="eduExtras" style="margin-top:8px;"></div>
         </div>
 
         <div class="form-section">
-          <h4>Previous Experience</h4>
-          <table>
+          <h4>Previous Experience <button type="button" id="expAddBtn" class="btn small outline" style="margin-left:8px;">+</button></h4>
+          <table id="experienceTable">
             <tr>
               <th>Organization</th>
               <th>Designation</th>
@@ -354,25 +377,26 @@
               <th>Start Date</th>
               <th>End Date</th>
             </tr>
-            <tr>
-              <td><input name="exp1_org"/></td>
-              <td><input name="exp1_des"/></td>
-              <td><input name="exp1_ind"/></td>
-              <td><input name="exp1_city"/></td>
-              <td><input name="exp1_ctry"/></td>
-              <td><input type="date" name="exp1_start"/></td>
-              <td><input type="date" name="exp1_end"/></td>
-            </tr>
-            <tr>
-              <td><input name="exp2_org"/></td>
-              <td><input name="exp2_des"/></td>
-              <td><input name="exp2_ind"/></td>
-              <td><input name="exp2_city"/></td>
-              <td><input name="exp2_ctry"/></td>
-              <td><input type="date" name="exp2_start"/></td>
-              <td><input type="date" name="exp2_end"/></td>
-            </tr>
-            <!-- <tr>
+            <tbody>
+              <tr>
+                <td><input name="exp1_org"/></td>
+                <td><input name="exp1_des"/></td>
+                <td><input name="exp1_ind"/></td>
+                <td><input name="exp1_city"/></td>
+                <td><input name="exp1_ctry"/></td>
+                <td><input type="date" name="exp1_start"/></td>
+                <td><input type="date" name="exp1_end"/></td>
+              </tr>
+              <tr>
+                <td><input name="exp2_org"/></td>
+                <td><input name="exp2_des"/></td>
+                <td><input name="exp2_ind"/></td>
+                <td><input name="exp2_city"/></td>
+                <td><input name="exp2_ctry"/></td>
+                <td><input type="date" name="exp2_start"/></td>
+                <td><input type="date" name="exp2_end"/></td>
+              </tr>
+              <tr>
               <td><input name="exp3_org"/></td>
               <td><input name="exp3_des"/></td>
               <td><input name="exp3_ind"/></td>
@@ -380,8 +404,11 @@
               <td><input name="exp3_ctry"/></td>
               <td><input type="date" name="exp3_start"/></td>
               <td><input type="date" name="exp3_end"/></td>
-            </tr> -->
+              </tr>
+            </tbody>
           </table>
+          
+            
         </div>
 
         <div class="form-section">
@@ -582,6 +609,83 @@
         dobEl.addEventListener('input', updateAge);
       }
       window.addEventListener('load', updateAge);
+    })();
+  </script>
+
+  <script>
+    (function(){
+      const chk = document.getElementById('permSameAsCorr');
+      const f = document.getElementById('newHireForm');
+      function syncPerm(){
+        const map = [
+          ['corrAddress1','permAddress1'],
+          ['corrAddress2','permAddress2'],
+          ['corrAddress3','permAddress3'],
+          ['corrPincode','permPincode'],
+          ['corrState','permState'],
+          ['corrCountry','permCountry']
+        ];
+        map.forEach(([c,p]) => {
+          const ce = f.querySelector(`[name="${c}"]`);
+          const pe = f.querySelector(`[name="${p}"]`);
+          if (ce && pe) pe.value = ce.value || '';
+        });
+      }
+      function attachCorrListeners(){
+        const fields = ['corrAddress1','corrAddress2','corrAddress3','corrPincode','corrState','corrCountry'];
+        fields.forEach(n => {
+          const el = f.querySelector(`[name="${n}"]`);
+          if (el) {
+            el.addEventListener('input', () => { if (chk && chk.checked) syncPerm(); });
+            el.addEventListener('change', () => { if (chk && chk.checked) syncPerm(); });
+          }
+        });
+      }
+      if (chk) {
+        chk.addEventListener('change', () => {
+          if (chk.checked) syncPerm();
+        });
+      }
+      attachCorrListeners();
+      let eduCount = 3;
+      const eduAdd = document.getElementById('eduAddBtn');
+      const eduTbody = document.querySelector('#educationTable tbody');
+      if (eduAdd && eduTbody) {
+        eduAdd.addEventListener('click', () => {
+          eduCount++;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><input name="edu${eduCount}_est"/></td>
+            <td><input name="edu${eduCount}_inst"/></td>
+            <td><input name="edu${eduCount}_ctry"/></td>
+            <td><input name="edu${eduCount}_cert"/></td>
+            <td><input name="edu${eduCount}_branch"/></td>
+            <td><input name="edu${eduCount}_score"/></td>
+            <td><input type="date" name="edu${eduCount}_start"/></td>
+            <td><input type="date" name="edu${eduCount}_end"/></td>
+          `;
+          eduTbody.appendChild(tr);
+        });
+      }
+      let expCount = 2;
+      const expAdd = document.getElementById('expAddBtn');
+      const expTbody = document.querySelector('#experienceTable tbody');
+      if (expAdd && expTbody) {
+        expAdd.addEventListener('click', () => {
+          expCount++;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><input name="exp${expCount}_org"/></td>
+            <td><input name="exp${expCount}_des"/></td>
+            <td><input name="exp${expCount}_ind"/></td>
+            <td><input name="exp${expCount}_city"/></td>
+            <td><input name="exp${expCount}_ctry"/></td>
+            <td><input type="date" name="exp${expCount}_start"/></td>
+            <td><input type="date" name="exp${expCount}_end"/></td>
+          `;
+          expTbody.appendChild(tr);
+        });
+      }
     })();
   </script>
 
