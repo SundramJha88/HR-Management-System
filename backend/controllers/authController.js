@@ -43,8 +43,13 @@ exports.login = async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
     let user = null;
-    if (email) user = await User.findOne({ email });
-    if (!user) user = await User.findOne({ name: email });
+    // Try to find user by email, name, or employeeId
+    if (email) {
+      user = await User.findOne({ email });
+      if (!user) user = await User.findOne({ name: email });
+      if (!user) user = await User.findOne({ employeeId: email.toUpperCase() });
+    }
+    
     if (!user) {
       console.warn(`Login failed: user not found for identifier='${email}'`);
       return res.status(400).json({ error: 'User not found' });

@@ -21,8 +21,8 @@ exports.submit = async (req, res) => {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-    const employeeId = `VAAU${String(counter.seq).padStart(4, '0')}`;
-    const plainPassword = String(payload.password || '').trim() || `Vaau@${crypto.randomBytes(4).toString('hex')}`;
+    const employeeId = `DP${String(counter.seq).padStart(4, '0')}`;
+    const plainPassword = String(payload.password || '').trim() || `DP@${crypto.randomBytes(4).toString('hex')}`;
     const salt = await bcrypt.genSalt(10);
     const password = await bcrypt.hash(plainPassword, salt);
     const newHireEntry = await NewHire.create({
